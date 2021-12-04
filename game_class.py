@@ -1,4 +1,5 @@
 import pygame
+import math
 
 class Game:
         
@@ -16,28 +17,31 @@ class Game:
         self._setup_sounds()
         self._setup_fonts()
             
-    class Player:
+    class Player(pygame.sprite.Sprite):
         
         def __init__(self, screen, fps = 120, flip=False):
-            
+
+            # Call the parent class (Sprite) constructor
+            pygame.sprite.Sprite.__init__(self)
+            self.screen = screen
             self.fps = fps
 
             # sprites
-            self.screen = screen
-            self.sprite = pygame.image.load('sprites/char.png')
-            self.sword_sprite = pygame.image.load('sprites/sword.png')
-            self.shield_sprite = pygame.image.load('sprites/shield.png')
+            self.sprite = pygame.image.load('sprites/char.png').convert()
+            self.rect = self.sprite.get_rect()
+            self.sword_sprite = pygame.image.load('sprites/sword.png').convert()
+            self.shield_sprite = pygame.image.load('sprites/shield.png').convert()
             
             # positioning
-            self.X = 100
-            self.Y = 540
+            self.rect.x = 100
+            self.rect.y = 540
             self.X_change = 0
             self.Y_change = 0
             self.speed = 10
 
             # jumping
             self.jumping = False
-            self.jump_speed = [0,0,-20,-40,-40,-32,-16,-4,-4,-1,-1,0,0,0,0,1,1,4,20,20,32,40,40,0]
+            self.jump_speed = [0,0,-40,-80,-80,-60,-30,-10,-10,-2,-2,0,0,0,0,2,2,10,20,20,30,40,50,60,80,0]
             self.jump_fps_time = len(self.jump_speed)
             self.jump_counter = self.jump_fps_time
 
@@ -87,11 +91,12 @@ class Game:
             self.i_frames = 60
             self.i_frames_invinsible = True
 
+            self.flip = flip
             if flip is True:
                 self.sprite = pygame.transform.flip(self.sprite, True, False)
                 self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
                 self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
-                self.X = 1300
+                self.rect.x = 1300
                 self.sword_offset *= -1
                 self.shield_offset *= -1
                 self.knockback_speed *= -1
@@ -100,7 +105,7 @@ class Game:
         def show(self):
             '''Show character sprite.'''
 
-            self.screen.blit(self.sprite, (self.X, self.Y))
+            self.screen.blit(self.sprite, (self.rect.x, self.rect.y))
 
         def update(self):
             '''Handle events that must take place every frame.'''
@@ -118,13 +123,13 @@ class Game:
         def movement(self):
             '''Handle sprite movements.'''
             
-            self.X += self.X_change
-            self.Y += self.Y_change
-
-            if self.X <= 0:
-                self.X = 0
-            elif self.X >= 1436:
-                self.X = 1436
+            self.rect.move_ip(self.X_change,self.Y_change)
+            if self.flip is True:
+                print(f'{self.rect.x},{self.rect.y}')
+            if self.rect.x <= 0:
+                self.rect.x = 0
+            elif self.rect.x >= 1436:
+                self.rect.x = 1436
 
         def deploy_jump(self):
             
@@ -141,7 +146,6 @@ class Game:
                 else:
                     timer = int(self.jump_fps_time - self.jump_counter)
                     self.Y_change = self.jump_speed[timer]
-                    print(self.jump_speed[timer])
                     self.jump_counter -= 1
 
         def deploy_knockback(self):
@@ -239,7 +243,7 @@ class Game:
                 self.striking_counter -= 1
 
                 if self.sword_come_in_time < self.striking_counter < self.sword_come_out_time:
-                    self.screen.blit(self.sword_sprite, (self.X+self.sword_offset, self.Y))
+                    self.screen.blit(self.sword_sprite, (self.rect.x+self.sword_offset, self.rect.y))
                     self.sword_hurtbox = True
                 else:
                     self.sword_hurtbox = False
@@ -265,7 +269,7 @@ class Game:
                 self.shield_counter -= 1
 
                 if self.shield_come_in_time < self.shield_counter < self.shield_come_out_time:
-                    self.screen.blit(self.shield_sprite, (self.X+self.shield_offset, self.Y))
+                    self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offset, self.rect.y))
                     self.shield_block = True
                     self.invinsible = True
                 else:
@@ -528,6 +532,10 @@ class Game:
             else:
                 self.player2.check_dash(False)
             
+            # jumping
+            if keys[pygame.K_UP]:
+                self.player2.deploy_jump()
+            
             if keys[pygame.K_h]:
                 self.player2.deploy_strike()
 
@@ -550,16 +558,16 @@ class Game:
         '''Handles player collisions.'''
         
         # check collision between 2 players
-        collide = abs(self.player1.X - self.player2.X)
+        collide = math.sqrt((self.player1.rect.x - self.player2.rect.x)**2 + (self.player1.rect.y - self.player2.rect.y)**2)
         
         if collide < 150:
-            if self.player1.X < self.player2.X:
+            if self.player1.rect.x < self.player2.rect.x:
 
                 # if player is moving towards enemy, stop them
                 if self.player1.X_change > 0:
                     self.player1.X_change = 0
                 if self.player2.X_change < 0:
-                    self.player2.X_change = 0
+                    self.player2.X_change = 0                  
     
     def _handle_sword_collisions(self):
         '''Handles sword collisions.'''
@@ -568,8 +576,8 @@ class Game:
         if self.player1.sword_hurtbox is True:
 
             # check for collision between player1 sword and player2
-            self.player1.sword_X = self.player1.X + self.player1.sword_offset
-            collide1 = abs(self.player1.sword_X - self.player2.X)
+            self.player1.sword_X = self.player1.rect.x + self.player1.sword_offset
+            collide1 = abs(self.player1.sword_X - self.player2.rect.x)
 
             # if collision is touching
             if collide1 < 150:
@@ -593,8 +601,8 @@ class Game:
         # player2 striking player1
         if self.player2.sword_hurtbox is True:
 
-            self.player2.sword_X = self.player2.X + self.player2.sword_offset
-            collide2 = abs(self.player2.sword_X - self.player1.X)
+            self.player2.sword_X = self.player2.rect.x + self.player2.sword_offset
+            collide2 = abs(self.player2.sword_X - self.player1.rect.x)
 
             if collide2 < 150:
 
