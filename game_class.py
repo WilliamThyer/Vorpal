@@ -42,9 +42,14 @@ class Game:
 
             # jumping
             self.jumping = False
-            self.jump_speed = [0,0,-40,-80,-80,-60,-30,-10,-10,-2,-2,0,0,0,0,2,2,10,20,20,30,40,50,60,80]
+            self.jump_speed = [0,0,-40,-80,-80,-60,-30,-10,-10,-2,-2,0,0,0,0]
             self.jump_fps_time = len(self.jump_speed)
             self.jump_counter = self.jump_fps_time
+
+            # falling
+            self.falling = False
+            self.fall_ticker = 0
+            self.initial_fall_speed = 5
 
             # dashing
             self.press_state = 0
@@ -114,6 +119,7 @@ class Game:
             self.continue_knockback()
             self.continue_dash()
             self.continue_jump()
+            self.continue_fall()
             self.stamina_update()
             self.continue_strike()
             self.continue_shield()
@@ -122,19 +128,36 @@ class Game:
 
         def movement(self):
             '''Handle sprite movements.'''
-            if self.flip is False:
-                print(self.Y_change)
+
             self.rect.move_ip(self.X_change,self.Y_change)
 
             if self.rect.x <= 0:
                 self.rect.x = 0
             elif self.rect.x >= 1436:
                 self.rect.x = 1436
-            if self.jumping is False:
-                if self.rect.y < 540:
-                    self.Y_change = 20
+            
+            if self.rect.y < 540:
+                if self.jumping is False:
+                    self.deploy_fall()
+
             if self.rect.y > 540:
                 self.rect.y = 540
+
+        def deploy_fall(self):
+            
+            if self.falling is False:
+                self.falling = True
+                self.fall_ticker = 0
+
+        def continue_fall(self):
+
+            if self.rect.y == 540:
+                self.falling = False
+
+            if self.falling is True:
+                self.fall_ticker += 1
+                self.Y_change = self.initial_fall_speed*self.fall_ticker
+                print(self.fall_ticker)
 
         def deploy_jump(self):
             
