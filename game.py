@@ -12,10 +12,14 @@ while game.running is True:
     game.handle_gameover()
     game.handle_quit()
     game.handle_input()
-    game.handle_collisions()
 
     game.player1.update()
     game.player2.update()
+
+    game.handle_collisions()
+
+    game.player1.movement()
+    game.player2.movement()
 
     game.player1.show()
     game.player2.show()
