@@ -50,6 +50,7 @@ class Game:
             self.falling = False
             self.fall_ticker = 0
             self.initial_fall_speed = 5
+            self.on_top = False
 
             # dashing
             self.press_state = 0
@@ -119,6 +120,7 @@ class Game:
             self.continue_knockback()
             self.continue_dash()
             self.continue_jump()
+            self.check_fall()
             self.continue_fall()
             self.stamina_update()
             self.continue_strike()
@@ -134,14 +136,15 @@ class Game:
             if self.rect.x <= 0:
                 self.rect.x = 0
             elif self.rect.x >= 1436:
-                self.rect.x = 1436
-            
-            if self.rect.y < 540:
-                if self.jumping is False:
-                    self.deploy_fall()
+                self.rect.x = 1436        
 
             if self.rect.y > 540:
                 self.rect.y = 540
+
+        def check_fall(self):
+
+            if (self.rect.y < 540) & (self.jumping is False) & (self.on_top is False):
+                self.deploy_fall()
 
         def deploy_fall(self):
             
@@ -151,13 +154,14 @@ class Game:
 
         def continue_fall(self):
 
-            if self.rect.y == 540:
+            if (self.rect.y == 540) or (self.on_top is True):
                 self.falling = False
+                if self.Y_change >= 0:
+                    self.Y_change = 0
 
             if self.falling is True:
                 self.fall_ticker += 1
                 self.Y_change = self.initial_fall_speed*self.fall_ticker
-                print(self.fall_ticker)
 
         def deploy_jump(self):
             
@@ -590,21 +594,35 @@ class Game:
         if collide is True:
 
             self._calc_player_collision(self.player1, self.player2)
+            print(self.player1.X_change)
             self._calc_player_collision(self.player2, self.player1)
+            print(self.player1.X_change)
+        else:
+            self.player1.on_top = False
+            self.player2.on_top = False
             
     def _calc_player_collision(self,playera,playerb):
-
-        if playera.rect.x < playerb.rect.x:
-            if playera.X_change > 0:
-                playera.X_change = 0
-            if playerb.X_change < 0:
-                playerb.X_change = 0
         
+        playera.on_top = self._edge_detection(playera.rect.bottom, playerb.rect.top, 30)
+
+        if (playera.on_top is False) & (playerb.on_top is False):
+            if playera.rect.x < playerb.rect.x:
+                if playera.X_change > 0:
+                    playera.X_change = 0
+                if playerb.X_change < 0:
+                    playerb.X_change = 0
+        
+        # if player a is above player gb
         if playera.rect.y < playerb.rect.y:
+            # player a can't fall, player b can't jump
             if playera.Y_change > 0:
                 playera.Y_change = 0
             if playerb.Y_change < 0:
-                playerb.Y_change = 0 
+                playerb.Y_change = 0
+    
+    def _edge_detection(self,edgea,edgeb,margin=15):
+
+        return abs(edgea - edgeb) < margin
     
     def _handle_sword_collisions(self):
         '''Handles sword collisions.'''

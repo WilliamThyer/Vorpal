@@ -24,5 +24,5 @@ while game.running is True:
     game.player1.show()
     game.player2.show()
     game.show_data()
-
+    
     game.update_display()
