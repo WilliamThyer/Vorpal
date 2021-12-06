@@ -30,15 +30,15 @@ class Game:
             # sprites
             self.sprite = pygame.image.load('sprites/char.png').convert()
             self.rect = self.sprite.get_rect()
-            self.sword_sprite = pygame.image.load('sprites/sword.png').convert()
-            self.shield_sprite = pygame.image.load('sprites/shield.png').convert()
+            self.sword_sprite = pygame.image.load('sprites/sword.png').convert_alpha()
+            self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
             
             # positioning
             self.rect.x = 100
             self.rect.y = 540
             self.X_change = 0
             self.Y_change = 0
-            self.speed = 10
+            self.speed = 15
 
             # jumping
             self.jumping = False
@@ -54,7 +54,7 @@ class Game:
 
             # dashing
             self.press_state = 0
-            self.press_time = .2
+            self.press_time = .1
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
@@ -592,7 +592,6 @@ class Game:
         collide = bool(self.player1.rect.colliderect(self.player2.rect))
 
         if collide is True:
-
             self._calc_player_collision(self.player1, self.player2)
             print(self.player1.X_change)
             self._calc_player_collision(self.player2, self.player1)
