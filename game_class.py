@@ -233,7 +233,7 @@ class Game:
 
         def deploy_dash(self):
 
-            if self.stamina > 0:
+            if (self.is_acting() is False) & (self.stamina > 0):
                 self.X_change = self.dash_speed[0]*self.dash_mod
                 self.dash_counter = self.dash_fps_time
                 self.dashing = True
@@ -262,7 +262,7 @@ class Game:
         def deploy_strike(self):
             '''Deploys sword strike and starts timer.'''
 
-            if (self.striking is False) & (self.stamina > 0):
+            if (self.is_acting() is False) & (self.stamina > 0):
                 self.striking = True
                 self.striking_counter = self.sword_fps_time
                 
@@ -289,7 +289,7 @@ class Game:
         
         def deploy_shield(self):
             
-            if (self.shielding is False) & (self.stamina > 0):
+            if (self.is_acting() is False) & (self.stamina > 0):
                 self.shielding = True
                 self.shield_counter = self.shield_fps_time
                 
@@ -336,9 +336,14 @@ class Game:
         def is_ready(self):
             '''Returns True if player is ready for new inputs. (Can be expanded with other elements like self.is_jumping).'''
             
-            if self.striking or self.knockback or self.dashing or self.shielding:
-                return False
-            return True
+            return not self.knockback
+        
+        def is_acting(self):
+
+            if (self.striking is True) or (self.shielding is True) or (self.dashing is True):
+                return True
+            print('not acting')
+            return False
 
     def _setup_screen(self):
         '''Creates pygame screen and draws background.'''
