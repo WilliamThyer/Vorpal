@@ -1,9 +1,11 @@
 import pygame
 import math
+import random
+import copy
 
 class Game:
         
-    def __init__(self):
+    def __init__(self, ai = False):
 
         pygame.init()
         self.running = True
@@ -14,12 +16,15 @@ class Game:
 
         self._setup_screen()
         self._setup_elements()
-        self._setup_sounds()
         self._setup_fonts()
+
+        # ai
+        self.ai = ai
+        self.ai_key_dict = {pygame.K_LEFT:0,pygame.K_RIGHT:0,pygame.K_UP:0,pygame.K_h:0,pygame.K_j:0}
             
     class Player(pygame.sprite.Sprite):
         
-        def __init__(self, screen, fps = 120, flip=False):
+        def __init__(self, screen, fps = 120, flip = False):
 
             # Call the parent class (Sprite) constructor
             pygame.sprite.Sprite.__init__(self)
@@ -58,9 +63,9 @@ class Game:
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
-            self.dash_time = .2
-            self.dash_counter = self.dash_time*self.fps
-            self.dash_speed = [0,10,20,25,25,25,25,24,24,23,21,20,19,18,17,16,15,14,13,12,11,10,10,10]
+            self.dash_speed = [0,20,30,30,30,25,25,25,20,20,20]
+            self.dash_fps_time = len(self.dash_speed) 
+            self.dash_counter = self.dash_fps_time
 
             # knockback
             self.knockback = False
@@ -230,7 +235,7 @@ class Game:
 
             if self.stamina > 0:
                 self.X_change = self.dash_speed[0]*self.dash_mod
-                self.dash_counter = self.dash_time*self.fps
+                self.dash_counter = self.dash_fps_time
                 self.dashing = True
 
                 self.stamina -= 1
@@ -243,7 +248,7 @@ class Game:
                     self.dashing = False
                     self.X_change = 0
                 else:
-                    timer = int(self.dash_time*self.fps - self.dash_counter)
+                    timer = int(self.dash_fps_time - self.dash_counter)
                     self.X_change = self.dash_speed[timer]*self.dash_mod
                     self.dash_counter -= 1
 
@@ -359,12 +364,6 @@ class Game:
 
         self.screen.blit(self.background,(0,0))
 
-    def _setup_sounds(self):
-        ...
-        # pygame.mixer.music.load('sprites/background.wav')
-        # self.bullet_sound = pygame.mixer.Sound('sprites/laser.wav')
-        # self.explosion_sound = pygame.mixer.Sound('sprites/explosion.wav')
-
     def _setup_elements(self):
         '''Creates character and environment elements.'''
 
@@ -378,7 +377,6 @@ class Game:
         self.over_font = pygame.font.Font('freesansbold.ttf',64)
 
     def main_menu(self):
-        
 
         while (self.menu is True) & (self.running is True):
               
@@ -553,6 +551,9 @@ class Game:
                 self.player1.X_change = 0
         
         # player 2 movement
+        if self.ai is True:
+            keys = self.ai_controls()
+            
         if self.player2.is_ready():
             if keys[pygame.K_LEFT]:
                 self.player2.X_change = -self.player2.speed
@@ -578,7 +579,13 @@ class Game:
 
             if not keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
                 self.player2.X_change = 0
+
+    def ai_controls(self):
         
+        ai_key_dict_copy = copy.copy(self.ai_key_dict)
+        ai_key_dict_copy[random.sample(self.ai_key_dict.keys(),1)[0]] = 1
+        return ai_key_dict_copy
+
     def handle_collisions(self):
         '''Handles collisions from both players and swords.'''
         
@@ -593,9 +600,7 @@ class Game:
 
         if collide is True:
             self._calc_player_collision(self.player1, self.player2)
-            print(self.player1.X_change)
             self._calc_player_collision(self.player2, self.player1)
-            print(self.player1.X_change)
         else:
             self.player1.on_top = False
             self.player2.on_top = False
