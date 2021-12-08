@@ -1,7 +1,7 @@
 import game_class
 import pygame
 
-game = game_class.Game()
+game = game_class.Game(ai = False)
 
 while game.running is True:
 

@@ -16,6 +16,7 @@ class Game:
 
         self._setup_screen()
         self._setup_elements()
+        self._setup_audio()
         self._setup_fonts()
 
         # ai
@@ -33,10 +34,12 @@ class Game:
             self.fps = fps
 
             # sprites
-            self.sprite = pygame.image.load('sprites/char.png').convert()
+            self.sprite = pygame.image.load('sprites/char_tight.png').convert()
             self.rect = self.sprite.get_rect()
             self.sword_sprite = pygame.image.load('sprites/sword.png').convert_alpha()
+            self.sword_rect = self.sword_sprite.get_rect()
             self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
+            self.shield_rect = self.shield_sprite.get_rect()
             
             # positioning
             self.rect.x = 100
@@ -63,7 +66,7 @@ class Game:
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
-            self.dash_speed = [0,20,30,30,30,25,25,25,20,20,20]
+            self.dash_speed = [0,20,40,40,40,35,35,25,20,20,20]
             self.dash_fps_time = len(self.dash_speed) 
             self.dash_counter = self.dash_fps_time
 
@@ -74,22 +77,26 @@ class Game:
             self.knockback_speed = -25
             
             # sword
-            self.sword_offset = 150
+            self.sword_offsetx = 150
+            self.sword_offsety = -50 
             self.striking = False
             self.sword_hurtbox = False
             self.sword_time = .2
             self.sword_fps_time = self.sword_time*self.fps
             self.sword_come_out_time = self.sword_fps_time - .02*self.fps
             self.sword_come_in_time = .08*self.fps
+            self.sword_swoosh_sound = pygame.mixer.Sound('sprites/sounds/sword_swoosh.wav')
 
             # shield
-            self.shield_offset = 80
+            self.shield_offsetx = 150
+            self.shield_offsety = 0
             self.shielding = False
             self.shield_block = False
             self.shield_time = .24
             self.shield_fps_time = self.shield_time*self.fps
             self.shield_come_out_time = self.shield_fps_time - .02*self.fps
             self.shield_come_in_time = .02*self.fps
+            self.shield_sound = pygame.mixer.Sound('sprites/sounds/shield.mp3')
 
             # stamina
             self.max_stamina = 5
@@ -109,8 +116,8 @@ class Game:
                 self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
                 self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
                 self.rect.x = 1300
-                self.sword_offset *= -1
-                self.shield_offset *= -1
+                self.sword_offsetx = (self.sword_offsetx+15)*-1
+                self.shield_offsetx = (self.shield_offsetx-130)*-1
                 self.knockback_speed *= -1
                 self.dash_mod *= -1
         
@@ -263,14 +270,13 @@ class Game:
             '''Deploys sword strike and starts timer.'''
 
             if (self.is_acting() is False) & (self.stamina > 0):
+                self.sword_swoosh_sound.play()
                 self.striking = True
                 self.striking_counter = self.sword_fps_time
                 
                 self.stamina -= 1
                 self.stamina_reload_counter = self.stamina_reload_time*self.fps
                 
-                self.X_change = 0
-
         def continue_strike(self):
             '''Handles sword strike including sprite, frozen frames, and timer countdown'''
 
@@ -279,7 +285,9 @@ class Game:
                 self.striking_counter -= 1
 
                 if self.sword_come_in_time < self.striking_counter < self.sword_come_out_time:
-                    self.screen.blit(self.sword_sprite, (self.rect.x+self.sword_offset, self.rect.y))
+                    self.screen.blit(self.sword_sprite, (self.rect.x+self.sword_offsetx, self.rect.y-self.sword_offsety))
+                    self.sword_rect.x = self.rect.x+self.sword_offsetx
+                    self.sword_rect.y = self.rect.y-self.sword_offsety
                     self.sword_hurtbox = True
                 else:
                     self.sword_hurtbox = False
@@ -290,6 +298,7 @@ class Game:
         def deploy_shield(self):
             
             if (self.is_acting() is False) & (self.stamina > 0):
+                self.shield_sound.play()
                 self.shielding = True
                 self.shield_counter = self.shield_fps_time
                 
@@ -305,7 +314,8 @@ class Game:
                 self.shield_counter -= 1
 
                 if self.shield_come_in_time < self.shield_counter < self.shield_come_out_time:
-                    self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offset, self.rect.y))
+                    self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offsetx, self.rect.y-self.shield_offsety))
+                    print(self.rect.y-self.shield_offsety)
                     self.shield_block = True
                     self.invinsible = True
                 else:
@@ -342,7 +352,6 @@ class Game:
 
             if (self.striking is True) or (self.shielding is True) or (self.dashing is True):
                 return True
-            print('not acting')
             return False
 
     def _setup_screen(self):
@@ -360,6 +369,11 @@ class Game:
         self.stamina_sprite = pygame.image.load('sprites/stamina.png').convert_alpha()
         self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, (60, 60))
 
+    def _setup_audio(self):
+
+        self.sword_hit_sound = pygame.mixer.Sound('sprites/sounds/sword_hit.mp3')
+        self.sword_hit_shield_sound = pygame.mixer.Sound('sprites/sounds/sword_hit_shield.wav')
+        
     def update_display(self):
         pygame.display.update()
         self.fps_clock.tick(self.fps)
@@ -632,51 +646,31 @@ class Game:
     def _edge_detection(self,edgea,edgeb,margin=15):
 
         return abs(edgea - edgeb) < margin
-    
+
     def _handle_sword_collisions(self):
-        '''Handles sword collisions.'''
+
+        self._calc_sword_collisions(self.player1, self.player2)
+        self._calc_sword_collisions(self.player2, self.player1)
+
+    def _calc_sword_collisions(self,playera,playerb):
         
-        # player1 striking player2
-        if self.player1.sword_hurtbox is True:
+        if playera.sword_hurtbox is True:
 
-            # check for collision between player1 sword and player2
-            self.player1.sword_X = self.player1.rect.x + self.player1.sword_offset
-            collide1 = abs(self.player1.sword_X - self.player2.rect.x)
+            collide = bool(playera.sword_rect.colliderect(playerb.rect))
+            
+            if collide is True:
 
-            # if collision is touching
-            if collide1 < 150:
-                
-                # if player2 isn't shielding
-                if self.player2.shield_block is False:
-                    self.player2.deploy_knockback()
-
-                    # if player 2 isn't invinsible
-                    if self.player2.invinsible is False:    
-                        self.player2.life -= 1
-                        self.player2.deploy_iframes()
-                
-                # if player2 is shielding
+                if playerb.shield_block is False:
+                    
+                    if playerb.invinsible is False:    
+                        playerb.deploy_knockback()
+                        playerb.life -= 1
+                        playerb.deploy_iframes()
+                        self.sword_hit_sound.play()
+            
                 else:
-                    # if player1 isn't being knocked back and has stamina to lose
-                    if (self.player1.knockback is False) & (self.player1.stamina > 0):
-                        self.player1.stamina -= 1
-                    self.player1.deploy_knockback()
-        
-        # player2 striking player1
-        if self.player2.sword_hurtbox is True:
-
-            self.player2.sword_X = self.player2.rect.x + self.player2.sword_offset
-            collide2 = abs(self.player2.sword_X - self.player1.rect.x)
-
-            if collide2 < 150:
-
-                if self.player1.shield_block is False:
-                    self.player1.deploy_knockback()
-                
-                    if self.player1.invinsible is False:
-                        self.player1.life -= 1
-                        self.player1.deploy_iframes()
-                else:
-                    if (self.player2.knockback is False) & (self.player2.stamina > 0):
-                        self.player2.stamina -= 1
-                    self.player2.deploy_knockback()
+                    if (playera.knockback is False) & (playera.stamina > 0):
+                        playera.stamina -= 1
+                        self.sword_hit_shield_sound.play()
+                    playera.deploy_knockback()
+                    
