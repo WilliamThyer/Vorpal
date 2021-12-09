@@ -61,12 +61,13 @@ class Game:
             self.on_top = False
 
             # dashing
+            self.most_recent_press = False
             self.press_state = 0
             self.press_time = .1
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
-            self.dash_speed = [0,40,50,50,50,50,50,40,40]
+            self.dash_speed = [0,-40,-50,-50,-50,-50,-50,-40,-40]
             self.dash_fps_time = len(self.dash_speed) 
             self.dash_counter = self.dash_fps_time
 
@@ -216,26 +217,28 @@ class Game:
 
         def check_dash(self, press):
             
-            if press is True:
-
+            if press is not False:
+                
                 # If 'back' is pressed and is wasn't previously, iterate state and start timer
                 if self.press_state == 0:
+                    
                     self.press_state += 1
                     self.press_timer = self.press_time*self.fps
                 
-                # If 'back' if pressed after pressing and releasing before timer is up
-                if self.press_state == 2:
+                # If same key is pressed after pressing and releasing before timer is up
+                if (press == self.most_recent_press) & (self.press_state == 2):
                     if self.press_timer > 0:
                         self.deploy_dash()
                         self.press_state = 0
                         self.press_timer = 0
                     else:
                         self.press_state = 0
-            
-            # If 'back' is not pressed and it was previously, itererate state and timer
-            if press is False:
-                if self.press_state == 1:
-                    self.press_state += 1
+
+            # If key is not pressed and it was previously, iterate state
+            if (press is False) & (self.press_state == 1):
+                self.press_state += 1
+
+            self.most_recent_press = press
 
         def iterate_dash_timer(self):
 
@@ -319,7 +322,6 @@ class Game:
 
                 if self.shield_come_in_time < self.shield_counter < self.shield_come_out_time:
                     self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offsetx, self.rect.y-self.shield_offsety))
-                    print(self.rect.y-self.shield_offsety)
                     self.shield_block = True
                     self.invinsible = True
                 else:
@@ -550,21 +552,20 @@ class Game:
                     self.player1.flip_player()
 
                 self.player1.X_change = -self.player1.speed
-                
-                # back key is pressed
-                self.player1.check_dash(True)
+                self.player1.check_dash('Left')
             
-            else:
-                # back key is unpressed
-                self.player1.check_dash(False)
-
             # right movement
             if keys[pygame.K_d]:
+
                 if self.player1.facing_left is True:
                     self.player1.facing_left = False
                     self.player1.flip_player()
 
                 self.player1.X_change = self.player1.speed
+                self.player1.check_dash('Right')
+            
+            if (not keys[pygame.K_a]) & (not keys[pygame.K_d]):
+                self.player1.check_dash(False)
             
             # jumping
             if keys[pygame.K_w]:
@@ -605,9 +606,9 @@ class Game:
                     self.player2.flip_player()
 
                 self.player2.X_change = self.player2.speed
-                self.player2.check_dash(True)
-            else:
-                self.player2.check_dash(False)
+                # self.player2.check_dash(True)
+            # else:
+            #     self.player2.check_dash(False)
             
             # jumping
             if keys[pygame.K_UP]:
