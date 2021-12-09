@@ -19,10 +19,10 @@ class Game:
         self._setup_audio()
         self._setup_fonts()
 
-        # ai
         self.ai = ai
-        self.ai_key_dict = {pygame.K_LEFT:0,pygame.K_RIGHT:0,pygame.K_UP:0,pygame.K_h:0,pygame.K_j:0}
-            
+        if self.ai is True:
+            ai_enemy = self.AIEnemy()
+                    
     class Player(pygame.sprite.Sprite):
         
         def __init__(self, screen, fps = 120, facing_left = False):
@@ -360,6 +360,19 @@ class Game:
                 return True
             return False
 
+    class AIEnemy():
+        
+        def __init__(self):
+
+            l,r,u,h,j = pygame.K_LEFT,pygame.K_RIGHT,pygame.K_UP,pygame.K_h,pygame.K_j
+            self.ai_key_dict = {l:0,r:0,u:0,h:0,j:0}
+        
+        def ai_controls(self):
+        
+            ai_key_dict_copy = copy.copy(self.ai_key_dict)
+            ai_key_dict_copy[random.sample(self.ai_key_dict.keys(),1)[0]] = 1
+            return ai_key_dict_copy
+
     def _setup_screen(self):
         '''Creates pygame screen and draws background.'''
 
@@ -587,7 +600,7 @@ class Game:
         
         # player 2 movement
         if self.ai is True:
-            keys = self.ai_controls()
+            keys = self.AIEnemy().ai_controls()
             
         if self.player2.is_ready():
 
@@ -598,6 +611,7 @@ class Game:
                     self.player2.flip_player()
 
                 self.player2.X_change = -self.player2.speed
+                self.player2.check_dash('Left')
 
             # right movement
             if keys[pygame.K_RIGHT]:
@@ -606,10 +620,11 @@ class Game:
                     self.player2.flip_player()
 
                 self.player2.X_change = self.player2.speed
-                # self.player2.check_dash(True)
-            # else:
-            #     self.player2.check_dash(False)
+                self.player2.check_dash('Right')
             
+            if (not keys[pygame.K_LEFT]) & (not keys[pygame.K_RIGHT]):
+                self.player2.check_dash(False)
+
             # jumping
             if keys[pygame.K_UP]:
                 self.player2.deploy_jump()
@@ -625,12 +640,6 @@ class Game:
 
             if not keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
                 self.player2.X_change = 0
-
-    def ai_controls(self):
-        
-        ai_key_dict_copy = copy.copy(self.ai_key_dict)
-        ai_key_dict_copy[random.sample(self.ai_key_dict.keys(),1)[0]] = 1
-        return ai_key_dict_copy
 
     def handle_collisions(self):
         '''Handles collisions from both players and swords.'''
