@@ -25,7 +25,7 @@ class Game:
             
     class Player(pygame.sprite.Sprite):
         
-        def __init__(self, screen, fps = 120, flip = False):
+        def __init__(self, screen, fps = 120, facing_left = False):
 
             # Call the parent class (Sprite) constructor
             pygame.sprite.Sprite.__init__(self)
@@ -61,12 +61,13 @@ class Game:
             self.on_top = False
 
             # dashing
+            self.most_recent_press = False
             self.press_state = 0
             self.press_time = .1
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
-            self.dash_speed = [0,20,40,40,40,35,35,25,20,20,20]
+            self.dash_speed = [0,-40,-50,-50,-50,-50,-50,-40,-40]
             self.dash_fps_time = len(self.dash_speed) 
             self.dash_counter = self.dash_fps_time
 
@@ -110,16 +111,10 @@ class Game:
             self.i_frames = 60
             self.i_frames_invinsible = True
 
-            self.flip = flip
-            if flip is True:
-                self.sprite = pygame.transform.flip(self.sprite, True, False)
-                self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
-                self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
+            self.facing_left = facing_left
+            if self.facing_left is True:
+                self.flip_player()
                 self.rect.x = 1300
-                self.sword_offsetx = (self.sword_offsetx+15)*-1
-                self.shield_offsetx = (self.shield_offsetx-130)*-1
-                self.knockback_speed *= -1
-                self.dash_mod *= -1
         
         def show(self):
             '''Show character sprite.'''
@@ -152,6 +147,16 @@ class Game:
 
             if self.rect.y > 540:
                 self.rect.y = 540
+
+        def flip_player(self):
+            
+            self.sprite = pygame.transform.flip(self.sprite, True, False)
+            self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
+            self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
+            self.sword_offsetx = (self.sword_offsetx+15)*-1
+            self.shield_offsetx = (self.shield_offsetx-130)*-1
+            self.knockback_speed *= -1 # fix!!
+            self.dash_mod *= -1
 
         def check_fall(self):
 
@@ -212,26 +217,28 @@ class Game:
 
         def check_dash(self, press):
             
-            if press is True:
-
+            if press is not False:
+                
                 # If 'back' is pressed and is wasn't previously, iterate state and start timer
                 if self.press_state == 0:
+                    
                     self.press_state += 1
                     self.press_timer = self.press_time*self.fps
                 
-                # If 'back' if pressed after pressing and releasing before timer is up
-                if self.press_state == 2:
+                # If same key is pressed after pressing and releasing before timer is up
+                if (press == self.most_recent_press) & (self.press_state == 2):
                     if self.press_timer > 0:
                         self.deploy_dash()
                         self.press_state = 0
                         self.press_timer = 0
                     else:
                         self.press_state = 0
-            
-            # If 'back' is not pressed and it was previously, itererate state and timer
-            if press is False:
-                if self.press_state == 1:
-                    self.press_state += 1
+
+            # If key is not pressed and it was previously, iterate state
+            if (press is False) & (self.press_state == 1):
+                self.press_state += 1
+
+            self.most_recent_press = press
 
         def iterate_dash_timer(self):
 
@@ -315,7 +322,6 @@ class Game:
 
                 if self.shield_come_in_time < self.shield_counter < self.shield_come_out_time:
                     self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offsetx, self.rect.y-self.shield_offsety))
-                    print(self.rect.y-self.shield_offsety)
                     self.shield_block = True
                     self.invinsible = True
                 else:
@@ -386,8 +392,8 @@ class Game:
     def _setup_elements(self):
         '''Creates character and environment elements.'''
 
-        self.player1 = self.Player(self.screen, flip = False)
-        self.player2 = self.Player(self.screen, flip = True)
+        self.player1 = self.Player(self.screen, facing_left = False)
+        self.player2 = self.Player(self.screen, facing_left = True)
 
     def _setup_fonts(self):
         '''Creates fonts for various texts.'''
@@ -538,18 +544,28 @@ class Game:
         # player 1 movement
         if self.player1.is_ready():
 
-            # back movement
+            # left movement
             if keys[pygame.K_a]:
-                self.player1.X_change = -self.player1.speed
-                # back key is pressed
-                self.player1.check_dash(True)
-            else:
-                # back key is unpressed
-                self.player1.check_dash(False)
+            
+                if self.player1.facing_left is False:
+                    self.player1.facing_left = True
+                    self.player1.flip_player()
 
-            # forward movement
+                self.player1.X_change = -self.player1.speed
+                self.player1.check_dash('Left')
+            
+            # right movement
             if keys[pygame.K_d]:
+
+                if self.player1.facing_left is True:
+                    self.player1.facing_left = False
+                    self.player1.flip_player()
+
                 self.player1.X_change = self.player1.speed
+                self.player1.check_dash('Right')
+            
+            if (not keys[pygame.K_a]) & (not keys[pygame.K_d]):
+                self.player1.check_dash(False)
             
             # jumping
             if keys[pygame.K_w]:
@@ -574,14 +590,25 @@ class Game:
             keys = self.ai_controls()
             
         if self.player2.is_ready():
+
+            # left movement
             if keys[pygame.K_LEFT]:
+                if self.player2.facing_left is False:
+                    self.player2.facing_left = True
+                    self.player2.flip_player()
+
                 self.player2.X_change = -self.player2.speed
 
+            # right movement
             if keys[pygame.K_RIGHT]:
+                if self.player2.facing_left is True:
+                    self.player2.facing_left = False
+                    self.player2.flip_player()
+
                 self.player2.X_change = self.player2.speed
-                self.player2.check_dash(True)
-            else:
-                self.player2.check_dash(False)
+                # self.player2.check_dash(True)
+            # else:
+            #     self.player2.check_dash(False)
             
             # jumping
             if keys[pygame.K_UP]:
