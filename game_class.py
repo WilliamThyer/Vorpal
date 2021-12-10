@@ -75,7 +75,7 @@ class Game:
             self.knockback = False
             self.knockback_time = .125
             self.knockback_counter = self.knockback_time*self.fps
-            self.knockback_speed = -25
+            self.knockback_speed = 25
             
             # sword
             self.sword_offsetx = 150
@@ -155,7 +155,6 @@ class Game:
             self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
             self.sword_offsetx = (self.sword_offsetx+15)*-1
             self.shield_offsetx = (self.shield_offsetx-130)*-1
-            self.knockback_speed *= -1 # fix!!
             self.dash_mod *= -1
 
         def check_fall(self):
@@ -695,6 +694,11 @@ class Game:
             collide = bool(playera.sword_rect.colliderect(playerb.rect))
             
             if collide is True:
+                
+                if playera.rect.x < playerb.rect.x:
+                    playerb.knockback_speed = 25
+                else:
+                    playerb.knockback_speed = -25
 
                 if playerb.shield_block is False:
                     
@@ -706,7 +710,7 @@ class Game:
             
                 else:
                     if (playera.knockback is False) & (playera.stamina > 0):
-                        playera.stamina -= 1
                         self.sword_hit_shield_sound.play()
-                    playera.deploy_knockback()
-                    
+                        playera.stamina -= 1
+
+                        playera.deploy_knockback()
