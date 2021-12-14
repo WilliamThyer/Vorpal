@@ -34,7 +34,7 @@ class Game:
             self.fps = fps
 
             # sprites
-            self.sprite = pygame.image.load('sprites/char_tight.png').convert()
+            self.sprite = pygame.image.load('sprites/blue_player.png').convert_alpha()
             self.rect = self.sprite.get_rect()
             self.sword_sprite = pygame.image.load('sprites/sword.png').convert_alpha()
             self.sword_rect = self.sword_sprite.get_rect()
@@ -113,6 +113,7 @@ class Game:
 
             self.facing_left = facing_left
             if self.facing_left is True:
+                self.sprite = pygame.image.load('sprites/red_player.png').convert_alpha()
                 self.flip_player()
                 self.rect.x = 1300
         
@@ -625,7 +626,7 @@ class Game:
                 self.player2.check_dash('Right')
             
             if (not keys[pygame.K_LEFT]) & (not keys[pygame.K_RIGHT]):
-                self.player2.check_dash(False)
+                self.player2.check_dash()
 
             # jumping
             if keys[pygame.K_UP]:
