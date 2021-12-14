@@ -213,31 +213,34 @@ class Game:
                     self.X_change = 0
                 else:
                     self.X_change = self.knockback_speed
-
-        def check_dash(self, press):
+        
+        def check_dash(self, press=None):
             
-            if press is not False:
-                
-                # If 'back' is pressed and is wasn't previously, iterate state and start timer
+            # if something is pressed
+            if press is not None:
+                # if ready
                 if self.press_state == 0:
-                    
-                    self.press_state += 1
+                    # get ready to look for upkey
+                    self.press_state +=1
+                    # start timer
                     self.press_timer = self.press_time*self.fps
-                
-                # If same key is pressed after pressing and releasing before timer is up
-                if (press == self.most_recent_press) & (self.press_state == 2):
+                    # set press id
+                    self.most_recent_press = press
+                # if down up down within timer
+                if (self.press_state == 2):
+                    # if within timer window
                     if self.press_timer > 0:
-                        self.deploy_dash()
-                        self.press_state = 0
-                        self.press_timer = 0
-                    else:
-                        self.press_state = 0
-
-            # If key is not pressed and it was previously, iterate state
-            if (press is False) & (self.press_state == 1):
+                        # if press equals first press
+                        if self.most_recent_press == press:
+                            self.deploy_dash()
+                    # always restart after stage 2
+                    self.press_state = 0
+            # if nothing is pressed and press_state is ready for upkey
+            if (press is None) & (self.press_state == 1):
                 self.press_state += 1
-
-            self.most_recent_press = press
+            #if timer is up, return to state 0
+            if self.press_timer == 0:
+                self.press_state = 0
 
         def iterate_dash_timer(self):
 
@@ -577,7 +580,7 @@ class Game:
                 self.player1.check_dash('Right')
             
             if (not keys[pygame.K_a]) & (not keys[pygame.K_d]):
-                self.player1.check_dash(False)
+                self.player1.check_dash()
             
             # jumping
             if keys[pygame.K_w]:
