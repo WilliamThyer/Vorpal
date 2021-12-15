@@ -386,8 +386,10 @@ class Game:
         self.background = pygame.image.load('sprites/background.png').convert()
         self.background = pygame.transform.scale(self.background, (1600, 900))
 
-        self.heart_sprite = pygame.image.load('sprites/heart.png').convert_alpha()
-        self.heart_sprite = pygame.transform.scale(self.heart_sprite, (60, 60))
+        self.blue_heart_sprite = pygame.image.load('sprites/blue_heart.png').convert_alpha()
+        self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, (30, 30))
+        self.red_heart_sprite = pygame.image.load('sprites/red_heart.png').convert_alpha()
+        self.red_heart_sprite = pygame.transform.scale(self.red_heart_sprite, (30, 30))        
         self.stamina_sprite = pygame.image.load('sprites/stamina.png').convert_alpha()
         self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, (60, 60))
 
@@ -490,8 +492,8 @@ class Game:
         lives2 = self.score_font.render(f'{self.player2.life}', True, (255,255,255))
         self.screen.blit(lives1, (50, 25))
         self.screen.blit(lives2, (1570, 25))
-        self.screen.blit(self.heart_sprite, (0, 10))
-        self.screen.blit(self.heart_sprite, (1520, 10))
+        self.screen.blit(self.blue_heart_sprite, (15, 23))
+        self.screen.blit(self.red_heart_sprite, (1535, 23))
 
     def _show_stamina(self):
 
