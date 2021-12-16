@@ -349,7 +349,7 @@ class Game:
 
             self.invinsible = True
             self.i_frames_invinsible = True
-            self.i_frames = 60
+            self.i_frames = 30
 
         def continue_iframes(self):
             '''Handles counting down invinsibility frames.'''
@@ -717,13 +717,13 @@ class Game:
             collide = bool(playera.sword_rect.colliderect(playerb.rect))
             
             if collide is True:
-                
-                if playera.rect.x < playerb.rect.x:
-                    playerb.knockback_speed = 25
-                else:
-                    playerb.knockback_speed = -25
 
                 if playerb.shield_block is False:
+
+                    if playera.rect.x < playerb.rect.x:
+                        playerb.knockback_speed = 25
+                    else:
+                        playerb.knockback_speed = -25
                     
                     if playerb.invinsible is False:    
                         playerb.deploy_knockback()
@@ -733,6 +733,12 @@ class Game:
             
                 else:
                     if (playera.knockback is False) & (playera.stamina > 0):
+                        
+                        if playera.rect.x < playerb.rect.x:
+                            playera.knockback_speed = -25
+                        else:
+                            playera.knockback_speed = 25
+
                         self.sword_hit_shield_sound.play()
                         playera.stamina -= 1
 
