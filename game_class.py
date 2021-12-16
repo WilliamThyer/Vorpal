@@ -43,7 +43,7 @@ class Game:
             self.shield_rect = self.shield_sprite.get_rect()
             
             # positioning
-            self.rect.x = 100
+            self.rect.left = 100
             self.rect.bottom = self.ground
             self.X_change = 0
             self.Y_change = 0
@@ -121,7 +121,7 @@ class Game:
             if self.facing_left is True:
                 self.sprite = pygame.image.load('sprites/red_player.png').convert_alpha()
                 self.flip_player()
-                self.rect.x = 1300
+                self.rect.right = self.screen.get_width()-100
         
         def show(self):
             '''Show character sprite.'''
