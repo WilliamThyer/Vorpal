@@ -10,7 +10,7 @@ while game.running is True:
     game.show_background()
     
     game.handle_gameover()
-    game.handle_quit()
+    game.handle_events()
     game.handle_input()
 
     game.player1.update()

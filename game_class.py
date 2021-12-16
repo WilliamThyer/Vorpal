@@ -32,6 +32,7 @@ class Game:
 
             self.screen = screen
             self.fps = fps
+            self.ground = round(self.screen.get_height()*0.78)
 
             # sprites
             self.sprite = pygame.image.load('sprites/blue_player.png').convert_alpha()
@@ -43,7 +44,7 @@ class Game:
             
             # positioning
             self.rect.x = 100
-            self.rect.y = 540
+            self.rect.bottom = self.ground
             self.X_change = 0
             self.Y_change = 0
             self.speed = 15
@@ -148,11 +149,11 @@ class Game:
 
             if self.rect.x <= 0:
                 self.rect.x = 0
-            elif self.rect.x >= 1436:
-                self.rect.x = 1436        
+            elif self.rect.right >= self.screen.get_width():
+                self.rect.right = self.screen.get_width()       
 
-            if self.rect.y > 540:
-                self.rect.y = 540
+            if self.rect.bottom > self.ground:
+                self.rect.bottom = self.ground
 
         def flip_player(self):
             
@@ -165,24 +166,25 @@ class Game:
 
         def check_fall(self):
 
-            if (self.rect.y < 540) & (self.jumping is False) & (self.on_top is False):
+            if (self.rect.bottom < self.ground) & (self.jumping is False) & (self.on_top is False):
                 self.deploy_fall()
 
         def deploy_fall(self):
             
             if self.falling is False:
                 self.falling = True
-                self.fall_ticker = 0
+                self.fall_ticker = 1
 
         def continue_fall(self):
 
-            if (self.rect.y == 540) or (self.on_top is True):
+            if (self.rect.bottom == self.ground) or (self.on_top is True):
                 self.falling = False
                 if self.Y_change >= 0:
                     self.Y_change = 0
 
             if self.falling is True:
-                self.fall_ticker += 1
+                if self.fall_ticker < 10:
+                    self.fall_ticker += 1
                 self.Y_change = self.initial_fall_speed*self.fall_ticker
 
         def deploy_jump(self):
@@ -385,13 +387,14 @@ class Game:
 
     def _setup_screen(self):
         '''Creates pygame screen and draws background.'''
-
-        self.screen = pygame.display.set_mode((1600,900))
-
+        monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h-80)
+        self.screen = pygame.display.set_mode(monitor_size,pygame.RESIZABLE)
+        
         # title and icon
         pygame.display.set_caption('Battle')
-        self.background = pygame.image.load('sprites/background.png').convert()
-        self.background = pygame.transform.scale(self.background, (1600, 900))
+        # self.background = pygame.image.load('sprites/background.png').convert()
+        # self.background = pygame.transform.scale(self.background, monitor_size)
+        
 
         self.blue_heart_sprite = pygame.image.load('sprites/blue_heart.png').convert_alpha()
         self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, (30, 30))
@@ -411,8 +414,8 @@ class Game:
 
     def show_background(self):
         '''Draws background.'''
-
-        self.screen.blit(self.background,(0,0))
+        self.screen.fill((0,0,0))
+        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen.get_height()*.78, self.screen.get_width(),20))
 
     def _setup_elements(self):
         '''Creates character and environment elements.'''
@@ -480,13 +483,13 @@ class Game:
         j = self.score_font.render('j', True, (255,255,255))
         self.screen.blit(f, (80, 25))
         self.screen.blit(g, (80, 65))
-        self.screen.blit(h, (1510, 25))
-        self.screen.blit(j, (1510, 65))
+        self.screen.blit(h, (self.screen.get_width() - 90, 25))
+        self.screen.blit(j, (self.screen.get_width() - 90, 65))
 
         stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
         space_text = self.over_font.render('Press SPACE to start', True, (255,255,255))
-        self.screen.blit(stats_text, (250, 250))
-        self.screen.blit(space_text, (500, 350))
+        self.screen.blit(stats_text, (self.screen.get_width()*0.17, 250))
+        self.screen.blit(space_text, (self.screen.get_width()*0.33, 350))
 
     def show_data(self):
 
@@ -498,25 +501,34 @@ class Game:
         lives1 = self.score_font.render(f'{self.player1.life}', True, (255,255,255))
         lives2 = self.score_font.render(f'{self.player2.life}', True, (255,255,255))
         self.screen.blit(lives1, (50, 25))
-        self.screen.blit(lives2, (1570, 25))
+        self.screen.blit(lives2, (self.screen.get_width() - 30, 25))
         self.screen.blit(self.blue_heart_sprite, (15, 23))
-        self.screen.blit(self.red_heart_sprite, (1535, 23))
+        self.screen.blit(self.red_heart_sprite, (self.screen.get_width() - 65, 23))
 
     def _show_stamina(self):
 
         stamina1 = self.score_font.render(f'{self.player1.stamina}', True, (255,255,255))
         stamina2 = self.score_font.render(f'{self.player2.stamina}', True, (255,255,255))
         self.screen.blit(stamina1, (50, 65))
-        self.screen.blit(stamina2, (1570, 65))
+        self.screen.blit(stamina2, (self.screen.get_width() - 30, 65))
         self.screen.blit(self.stamina_sprite, (0, 50))
-        self.screen.blit(self.stamina_sprite, (1520, 50))
+        self.screen.blit(self.stamina_sprite, (self.screen.get_width() - 80, 50))
 
-    def handle_quit(self):
+    def handle_events(self):
         '''Quits game if exit is pressed.'''
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+            if event.type == pygame.KEYDOWN:
+                if event.key == pygame.K_ESCAPE:
+                    self.running = False
+        
+            if event.type == pygame.VIDEORESIZE:
+                self.screen = pygame.display.set_mode((event.w, event.h),
+                                                    pygame.RESIZABLE)
+                self.player1.ground = round(self.screen.get_height()*0.78)
+                self.player2.ground = round(self.screen.get_height()*0.78)
 
     def handle_gameover(self):
 
@@ -542,9 +554,9 @@ class Game:
         over_text = self.over_font.render(text, True, (255,255,255))
         restart_text = self.over_font.render('Press SPACE to restart', True, (255,255,255))
         reset_text = self.over_font.render('Press R to reset stats', True, (255,255,255))
-        self.screen.blit(over_text, (550, 250))
-        self.screen.blit(restart_text, (425, 350))
-        self.screen.blit(reset_text, (450, 450))
+        self.screen.blit(over_text, (self.screen.get_width()*0.36, 250))
+        self.screen.blit(restart_text, (self.screen.get_width()*0.28, 350))
+        self.screen.blit(reset_text, (self.screen.get_width()*0.3, 450))
     
     def _handle_reset(self):
 
