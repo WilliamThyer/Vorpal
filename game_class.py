@@ -583,7 +583,12 @@ class Game:
             keys = pygame.key.get_pressed()
             if keys[pygame.K_SPACE]:
                 self.game_over = False
+                max_stamina1 = self.player1.max_stamina
+                max_stamina2 = self.player2.max_stamina
+
                 self._setup_elements()
+                self.player1.max_stamina,self.player1.stamina,self.player1.life = max_stamina1,max_stamina1,10-max_stamina1
+                self.player2.max_stamina,self.player2.stamina,self.player2.life = max_stamina2,max_stamina2,10-max_stamina2
             if keys[pygame.K_r]:
                 self.game_over = False
                 self.menu = True
