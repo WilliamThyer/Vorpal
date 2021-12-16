@@ -470,7 +470,7 @@ class Game:
                 if keys[0].key == pygame.K_SPACE:
                     self.menu = False
             
-            self.handle_quit()
+            self.handle_events()
             self.update_display()
 
     def _show_menu(self):
