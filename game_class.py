@@ -86,7 +86,6 @@ class Game:
             self.sword_fps_time = self.sword_time*self.fps
             self.sword_come_out_time = self.sword_fps_time - .02*self.fps
             self.sword_come_in_time = .08*self.fps
-            self.sword_swoosh_sound = pygame.mixer.Sound('sprites/sounds/sword_swoosh.wav')
 
             # shield
             self.shield_offsetx = 150
@@ -97,7 +96,6 @@ class Game:
             self.shield_fps_time = self.shield_time*self.fps
             self.shield_come_out_time = self.shield_fps_time - .02*self.fps
             self.shield_come_in_time = .02*self.fps
-            self.shield_sound = pygame.mixer.Sound('sprites/sounds/shield.mp3')
 
             # stamina
             self.max_stamina = 5
@@ -110,6 +108,13 @@ class Game:
             self.invinsible = False
             self.i_frames = 60
             self.i_frames_invinsible = True
+
+            # sounds
+            self.shield_sound = pygame.mixer.Sound('sprites/sounds/shield.mp3')
+            self.sword_swoosh_sound = pygame.mixer.Sound('sprites/sounds/sword_swoosh.wav')
+            self.jump_sound = pygame.mixer.Sound('sprites/sounds/jump.mp3')
+            self.land_sound = pygame.mixer.Sound('sprites/sounds/land.mp3')
+            self.dash_sound = pygame.mixer.Sound('sprites/sounds/dash.mp3')
 
             self.facing_left = facing_left
             if self.facing_left is True:
@@ -186,6 +191,7 @@ class Game:
                 
                 self.jumping = True
                 self.jump_counter = self.jump_fps_time
+                self.jump_sound.play()
                 
         def continue_jump(self):
 
@@ -254,6 +260,7 @@ class Game:
                 self.X_change = self.dash_speed[0]*self.dash_mod
                 self.dash_counter = self.dash_fps_time
                 self.dashing = True
+                self.dash_sound.play()
 
                 self.stamina -= 1
                 self.stamina_reload_counter = self.stamina_reload_time*self.fps
@@ -521,15 +528,13 @@ class Game:
         if self.player1.life <= 0:
 
             self._show_game_over('Player 2 wins')
-            self.player1.X = 2000
-            self.player1.Y = 2000
+            self.player1.rect.y = -2000
             self.game_over = True
 
         if self.player2.life <= 0:
 
             self._show_game_over('Player 1 wins')
-            self.player2.X = 2000
-            self.player2.Y = 2000
+            self.player2.rect.y = -2000
             self.game_over = True 
     
     def _show_game_over(self, text):

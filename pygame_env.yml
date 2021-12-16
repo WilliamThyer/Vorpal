@@ -1,0 +1,20 @@
+name: pygame
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - ca-certificates=2021.5.30=h5b45459_0
+  - openssl=1.1.1l=h8ffe710_0
+  - pip=21.2.4=pyhd8ed1ab_0
+  - python=3.9.7=h7840368_2_cpython
+  - python_abi=3.9=2_cp39
+  - setuptools=58.0.4=py39hcbf5309_2
+  - sqlite=3.36.0=h8ffe710_2
+  - tzdata=2021a=he74cb21_1
+  - ucrt=10.0.20348.0=h57928b3_0
+  - vc=14.2=hb210afc_5
+  - vs2015_runtime=14.29.30037=h902a5da_5
+  - wheel=0.37.0=pyhd8ed1ab_1
+  - pip:
+    - pygame==2.0.1
+prefix: C:\Users\Jarvis\anaconda3\envs\pygame
