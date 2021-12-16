@@ -392,9 +392,6 @@ class Game:
         
         # title and icon
         pygame.display.set_caption('Battle')
-        # self.background = pygame.image.load('sprites/background.png').convert()
-        # self.background = pygame.transform.scale(self.background, monitor_size)
-        
 
         self.blue_heart_sprite = pygame.image.load('sprites/blue_heart.png').convert_alpha()
         self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, (30, 30))
@@ -427,7 +424,9 @@ class Game:
         '''Creates fonts for various texts.'''
 
         self.score_font = pygame.font.Font('freesansbold.ttf', 32)
-        self.over_font = pygame.font.Font('freesansbold.ttf',64)
+        
+        over_font_size = round(min(self.screen.get_width()*.08,self.screen.get_height()*.08))
+        self.over_font = pygame.font.Font('freesansbold.ttf', over_font_size)
 
     def main_menu(self):
 
@@ -471,6 +470,8 @@ class Game:
                     self.menu = False
             
             self.handle_events()
+            self.player1.rect.bottom = self.player1.ground
+            self.player2.rect.bottom = self.player2.ground
             self.update_display()
 
     def _show_menu(self):
@@ -486,10 +487,17 @@ class Game:
         self.screen.blit(h, (self.screen.get_width() - 90, 25))
         self.screen.blit(j, (self.screen.get_width() - 90, 65))
 
-        stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
         space_text = self.over_font.render('Press SPACE to start', True, (255,255,255))
-        self.screen.blit(stats_text, (self.screen.get_width()*0.17, 250))
-        self.screen.blit(space_text, (self.screen.get_width()*0.33, 350))
+        stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
+
+        half_width,half_height = self.screen.get_width()/2,self.screen.get_height()/2
+
+        space_text_rect = space_text.get_rect(center=(half_width,half_height*.5))
+        self.screen.blit(space_text, space_text_rect)
+
+        stats_text_rect = stats_text.get_rect(
+            midtop=(half_width,space_text_rect.bottom+half_height*.03))
+        self.screen.blit(stats_text, stats_text_rect)
 
     def show_data(self):
 
@@ -529,6 +537,8 @@ class Game:
                                                     pygame.RESIZABLE)
                 self.player1.ground = round(self.screen.get_height()*0.78)
                 self.player2.ground = round(self.screen.get_height()*0.78)
+                over_font_size = round(min(self.screen.get_width()*.08,self.screen.get_height()*.08))
+                self.over_font = pygame.font.Font('freesansbold.ttf', over_font_size)
 
     def handle_gameover(self):
 
@@ -554,9 +564,17 @@ class Game:
         over_text = self.over_font.render(text, True, (255,255,255))
         restart_text = self.over_font.render('Press SPACE to restart', True, (255,255,255))
         reset_text = self.over_font.render('Press R to reset stats', True, (255,255,255))
-        self.screen.blit(over_text, (self.screen.get_width()*0.36, 250))
-        self.screen.blit(restart_text, (self.screen.get_width()*0.28, 350))
-        self.screen.blit(reset_text, (self.screen.get_width()*0.3, 450))
+
+        half_width,half_height = self.screen.get_width()/2,self.screen.get_height()/2
+
+        over_text_rect = over_text.get_rect(center=(half_width,half_height*.5))
+        self.screen.blit(over_text, over_text_rect)
+
+        restart_text_rect = restart_text.get_rect(midtop=(half_width,over_text_rect.bottom+half_height*.03))
+        self.screen.blit(restart_text, restart_text_rect)
+
+        reset_text_rect = reset_text.get_rect(midtop=(half_width,restart_text_rect.bottom+half_height*.03))
+        self.screen.blit(reset_text, reset_text_rect)
     
     def _handle_reset(self):
 
