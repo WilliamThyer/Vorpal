@@ -96,8 +96,6 @@ class Game:
             self.shield_block = False
             self.shield_time = .24
             self.shield_fps_time = self.shield_time*self.fps
-            self.shield_come_out_time = self.shield_fps_time - .02*self.fps
-            self.shield_come_in_time = .02*self.fps
 
             # stamina
             self.max_stamina = 5
@@ -348,14 +346,9 @@ class Game:
             if self.shielding is True:
 
                 self.shield_counter -= 1
-
-                if self.shield_come_in_time < self.shield_counter < self.shield_come_out_time:
-                    self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offsetx, self.rect.y-self.shield_offsety))
-                    self.shield_block = True
-                    self.invinsible = True
-                else:
-                    self.shield_block = False
-                    self.invinsible = False
+                self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offsetx, self.rect.y-self.shield_offsety))
+                self.shield_block = True
+                self.invinsible = True
                 
                 if self.shield_counter <= 0:
                     self.shielding = False
