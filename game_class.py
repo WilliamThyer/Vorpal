@@ -13,6 +13,7 @@ class Game:
         self.fps = 60
         self.fps_clock = pygame.time.Clock()
         self.menu = True
+        self.main_menu = True
 
         self._setup_screen()
         self._setup_elements()
@@ -117,11 +118,27 @@ class Game:
             self.land_sound = pygame.mixer.Sound('sprites/sounds/land.mp3')
             self.dash_sound = pygame.mixer.Sound('sprites/sounds/dash.mp3')
 
+            # input keys
+            self.input_dict = {
+                'jump': pygame.K_w,
+                'left': pygame.K_a,
+                'right': pygame.K_d,
+                'sword': pygame.K_f,
+                'shield': pygame.K_g
+            }
+
             self.facing_left = facing_left
             if self.facing_left is True:
                 self.sprite = pygame.image.load('sprites/red_player.png').convert_alpha()
                 self.flip_player()
                 self.rect.right = self.screen.get_width()-100
+                self.input_dict = {
+                    'jump': pygame.K_UP,
+                    'left': pygame.K_LEFT,
+                    'right': pygame.K_RIGHT,
+                    'sword': pygame.K_h,
+                    'shield': pygame.K_j
+                }
         
         def show(self):
             '''Show character sprite.'''
@@ -349,7 +366,7 @@ class Game:
 
             self.invinsible = True
             self.i_frames_invinsible = True
-            self.i_frames = 30
+            self.i_frames = 60
 
         def continue_iframes(self):
             '''Handles counting down invinsibility frames.'''
@@ -428,12 +445,9 @@ class Game:
         over_font_size = round(min(self.screen.get_width()*.08,self.screen.get_height()*.08))
         self.over_font = pygame.font.Font('freesansbold.ttf', over_font_size)
 
-    def main_menu(self):
+    def handle_menu(self):
 
-        while (self.menu is True) & (self.running is True):
-              
-            # need this for inner while loop
-            pygame.event.pump()
+        if (self.main_menu is True) & (self.running is True):
 
             self.show_background()
             self.player1.show()
@@ -469,10 +483,8 @@ class Game:
                 if keys[0].key == pygame.K_SPACE:
                     self.menu = False
             
-            self.handle_events()
             self.player1.rect.bottom = self.player1.ground
             self.player2.rect.bottom = self.player2.ground
-            self.update_display()
 
     def _show_menu(self):
 
@@ -595,96 +607,58 @@ class Game:
                 self._setup_elements()
 
     def handle_input(self):
-        '''Handles player input from both players.'''
 
         keys = pygame.key.get_pressed()
+        self._player_movement(self.player1, keys)
         
-        # player 1 movement
-        if self.player1.is_ready():
-
-            # left movement
-            if keys[pygame.K_a]:
-            
-                if self.player1.facing_left is False:
-                    self.player1.facing_left = True
-                    self.player1.flip_player()
-
-                self.player1.X_change = -self.player1.speed
-                self.player1.check_dash('Left')
-            
-            # right movement
-            if keys[pygame.K_d]:
-
-                if self.player1.facing_left is True:
-                    self.player1.facing_left = False
-                    self.player1.flip_player()
-
-                self.player1.X_change = self.player1.speed
-                self.player1.check_dash('Right')
-            
-            if (not keys[pygame.K_a]) & (not keys[pygame.K_d]):
-                self.player1.check_dash()
-            
-            # jumping
-            if keys[pygame.K_w]:
-                self.player1.deploy_jump()
-            
-            # sword
-            if keys[pygame.K_f]:
-                self.player1.deploy_strike()
-            
-            # shield
-            if keys[pygame.K_g]:
-                self.player1.deploy_shield()
-
-            # stopping
-            if keys[pygame.K_a] and keys[pygame.K_d]: 
-                self.player1.X_change = 0
-            if not keys[pygame.K_a] and not keys[pygame.K_d]: 
-                self.player1.X_change = 0
-        
-        # player 2 movement
         if self.ai is True:
             keys = self.AIEnemy().ai_controls()
-            
-        if self.player2.is_ready():
-
-            # left movement
-            if keys[pygame.K_LEFT]:
-                if self.player2.facing_left is False:
-                    self.player2.facing_left = True
-                    self.player2.flip_player()
-
-                self.player2.X_change = -self.player2.speed
-                self.player2.check_dash('Left')
-
-            # right movement
-            if keys[pygame.K_RIGHT]:
-                if self.player2.facing_left is True:
-                    self.player2.facing_left = False
-                    self.player2.flip_player()
-
-                self.player2.X_change = self.player2.speed
-                self.player2.check_dash('Right')
-            
-            if (not keys[pygame.K_LEFT]) & (not keys[pygame.K_RIGHT]):
-                self.player2.check_dash()
-
-            # jumping
-            if keys[pygame.K_UP]:
-                self.player2.deploy_jump()
-            
-            if keys[pygame.K_h]:
-                self.player2.deploy_strike()
-
-            if keys[pygame.K_j]:
-                self.player2.deploy_shield()
         
-            if keys[pygame.K_RIGHT] & keys[pygame.K_LEFT]:
-                self.player2.X_change = 0
+        self._player_movement(self.player2, keys)
 
-            if not keys[pygame.K_RIGHT] and not keys[pygame.K_LEFT]:
-                self.player2.X_change = 0
+    def _player_movement(self, player, keys):
+
+        if player.is_ready():
+            # left movement
+            if keys[player.input_dict['left']]:
+            
+                if player.facing_left is False:
+                    player.facing_left = True
+                    player.flip_player()
+
+                player.X_change = -player.speed
+                player.check_dash('Left')
+            
+            # right movement
+            if keys[player.input_dict['right']]:
+
+                if player.facing_left is True:
+                    player.facing_left = False
+                    player.flip_player()
+
+                player.X_change = player.speed
+                player.check_dash('Right')
+            
+            if (not keys[player.input_dict['left']]) & (not keys[player.input_dict['right']]):
+                player.check_dash()
+            
+            # jumping
+            if keys[player.input_dict['jump']]:
+                player.deploy_jump()
+            
+            # sword
+            if keys[player.input_dict['sword']]:
+                player.deploy_strike()
+            
+            # shield
+            if keys[player.input_dict['shield']]:
+                player.deploy_shield()
+
+            # stopping
+            if keys[player.input_dict['right']] and keys[player.input_dict['left']]: 
+                player.X_change = 0
+            if not keys[player.input_dict['right']] and not keys[player.input_dict['left']]:
+                player.X_change = 0
 
     def handle_collisions(self):
         '''Handles collisions from both players and swords.'''
