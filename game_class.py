@@ -294,7 +294,7 @@ class Game:
                     self.dash_counter -= 1
 
         def stamina_update(self):
-            if self.stamina < self.max_stamina:
+            if (self.stamina < self.max_stamina) & (self.jumping is False):
                 self.stamina_reload_counter -= 1
                 if self.stamina_reload_counter <= 0:
                     self.stamina += 1
