@@ -490,14 +490,14 @@ class Game:
 
         self._show_lives()
         self._show_stamina()
-        f = self.score_font.render('f', True, (255,255,255))
-        g = self.score_font.render('g', True, (255,255,255))
-        h = self.score_font.render('h', True, (255,255,255))
-        j = self.score_font.render('j', True, (255,255,255))
-        self.screen.blit(f, (80, 25))
-        self.screen.blit(g, (80, 65))
-        self.screen.blit(h, (self.screen.get_width() - 90, 25))
-        self.screen.blit(j, (self.screen.get_width() - 90, 65))
+        # f = self.score_font.render('f', True, (255,255,255))
+        # g = self.score_font.render('g', True, (255,255,255))
+        # h = self.score_font.render('h', True, (255,255,255))
+        # j = self.score_font.render('j', True, (255,255,255))
+        # self.screen.blit(f, (80, 25))
+        # self.screen.blit(g, (80, 65))
+        # self.screen.blit(h, (self.screen.get_width() - 90, 25))
+        # self.screen.blit(j, (self.screen.get_width() - 90, 65))
 
         space_text = self.over_font.render('Press SPACE to start', True, (255,255,255))
         stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
@@ -518,21 +518,23 @@ class Game:
 
     def _show_lives(self):
 
-        lives1 = self.score_font.render(f'{self.player1.life}', True, (255,255,255))
-        lives2 = self.score_font.render(f'{self.player2.life}', True, (255,255,255))
-        self.screen.blit(lives1, (50, 25))
-        self.screen.blit(lives2, (self.screen.get_width() - 30, 25))
         self.screen.blit(self.blue_heart_sprite, (15, 23))
-        self.screen.blit(self.red_heart_sprite, (self.screen.get_width() - 65, 23))
+        self.screen.blit(self.red_heart_sprite, (self.screen.get_width() - 40, 23))
+
+        for i in range(self.player1.life):
+            pygame.draw.rect(self.screen,(99,155,255),[60+30*i, 23, 30, 30])
+        for i in range(self.player2.life):
+            pygame.draw.rect(self.screen,(217,87,99),[self.screen.get_width()-80-30*i, 23, 30, 30])
 
     def _show_stamina(self):
 
-        stamina1 = self.score_font.render(f'{self.player1.stamina}', True, (255,255,255))
-        stamina2 = self.score_font.render(f'{self.player2.stamina}', True, (255,255,255))
-        self.screen.blit(stamina1, (50, 65))
-        self.screen.blit(stamina2, (self.screen.get_width() - 30, 65))
+        for i in range(self.player1.stamina):
+            pygame.draw.rect(self.screen,(255,255,255),[60+30*i, 70, 30, 30])
+        for i in range(self.player2.stamina):
+            pygame.draw.rect(self.screen,(255,255,255),[self.screen.get_width()-80-30*i, 70, 30, 30])
+        
         self.screen.blit(self.stamina_sprite, (0, 50))
-        self.screen.blit(self.stamina_sprite, (self.screen.get_width() - 80, 50))
+        self.screen.blit(self.stamina_sprite, (self.screen.get_width() - 60, 50))
 
     def handle_events(self):
         '''Quits game if exit is pressed.'''
