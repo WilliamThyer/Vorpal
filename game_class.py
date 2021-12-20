@@ -1,5 +1,4 @@
 import pygame
-import math
 import random
 import copy
 
@@ -21,8 +20,6 @@ class Game:
         self._setup_fonts()
 
         self.ai = ai
-        if self.ai is True:
-            ai_enemy = self.AIEnemy()
                     
     class Player(pygame.sprite.Sprite):
         
@@ -42,6 +39,8 @@ class Game:
             self.sword_rect = self.sword_sprite.get_rect()
             self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
             self.shield_rect = self.shield_sprite.get_rect()
+            # self.blood_sprite = pygame.image.load('sprites/blue_blood.png').convert_alpha()
+            # self.blood_sprite = pygame.transform.scale(self.blood_sprite, (100,100))
             
             # positioning
             self.rect.left = 100
@@ -128,6 +127,8 @@ class Game:
             self.facing_left = facing_left
             if self.facing_left is True:
                 self.sprite = pygame.image.load('sprites/red_player.png').convert_alpha()
+                # self.blood_sprite = pygame.image.load('sprites/red_blood.png').convert_alpha()
+                # self.blood_sprite = pygame.transform.scale(self.blood_sprite, (100,100))
                 self.flip_player()
                 self.rect.right = self.screen.get_width()-100
                 self.input_dict = {
@@ -722,6 +723,7 @@ class Game:
                         playerb.life -= 1
                         playerb.deploy_iframes()
                         self.sword_hit_sound.play()
+                        # self.screen.blit(self.blood, (playerb.rect.right, playerb.rect.centery-100))
             
                 else:
                     if (playera.knockback is False) & (playera.stamina > 0):
