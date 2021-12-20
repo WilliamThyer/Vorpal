@@ -39,8 +39,8 @@ class Game:
             self.sword_rect = self.sword_sprite.get_rect()
             self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
             self.shield_rect = self.shield_sprite.get_rect()
-            # self.blood_sprite = pygame.image.load('sprites/blue_blood.png').convert_alpha()
-            # self.blood_sprite = pygame.transform.scale(self.blood_sprite, (100,100))
+            self.blood_sprite = pygame.image.load('sprites/blue_blood.png').convert_alpha()
+            self.blood_sprite = pygame.transform.scale(self.blood_sprite, (100,100))
             
             # positioning
             self.rect.left = 100
