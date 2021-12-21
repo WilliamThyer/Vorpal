@@ -415,7 +415,6 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        # monitor_size = (500,600)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
