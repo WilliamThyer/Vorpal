@@ -27,40 +27,46 @@ class Game:
                     
     class Player(pygame.sprite.Sprite):
         
-        def __init__(self, screen, fps = 120, facing_left = False):
+        def __init__(self, screen, scale, fps = 120, facing_left = False):
 
             # Call the parent class (Sprite) constructor
             pygame.sprite.Sprite.__init__(self)
 
             self.screen = screen
+            self.scale = scale
             self.fps = fps
             self.ground = round(self.screen.get_height()*0.78)
 
             # sprites
             self.sprite = pygame.image.load('sprites/blue_player.png').convert_alpha()
+            self.sprite = pygame.transform.scale(self.sprite, self.scale((50,50)))
             self.rect = self.sprite.get_rect()
+
             self.sword_sprite = pygame.image.load('sprites/sword.png').convert_alpha()
+            self.sword_sprite = pygame.transform.scale(self.sword_sprite, self.scale((75,30)))
             self.sword_rect = self.sword_sprite.get_rect()
+
             self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
+            self.shield_sprite = pygame.transform.scale(self.shield_sprite, self.scale((5,50)))
             self.shield_rect = self.shield_sprite.get_rect()
             
             # positioning
-            self.rect.left = 100
+            self.rect.left = self.scale(100)
             self.rect.bottom = self.ground
             self.X_change = 0
             self.Y_change = 0
-            self.speed = 15
+            self.speed = self.scale(10)
 
             # jumping
             self.jumping = False
-            self.jump_speed = [0,0,-40,-80,-80,-60,-30,-10,-10,-2,-2,0,0,0,0]
+            self.jump_speed = self.scale([0,0,-20,-50,-50,-30,-15,-5,-5,-2,-2,0,0,0,0])
             self.jump_fps_time = len(self.jump_speed)
             self.jump_counter = self.jump_fps_time
 
             # falling
             self.falling = False
             self.fall_ticker = 0
-            self.initial_fall_speed = 5
+            self.initial_fall_speed = self.scale(3)
             self.on_top = False
 
             # dashing
@@ -70,7 +76,7 @@ class Game:
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
-            self.dash_speed = [0,-40,-50,-50,-50,-50,-50,-40,-40]
+            self.dash_speed = self.scale([0,-30,-30,-30,-30,-30,-30])
             self.dash_fps_time = len(self.dash_speed) 
             self.dash_counter = self.dash_fps_time
 
@@ -78,11 +84,11 @@ class Game:
             self.knockback = False
             self.knockback_time = .125
             self.knockback_counter = self.knockback_time*self.fps
-            self.knockback_speed = 25
+            self.knockback_speed = self.scale(25)
             
             # sword
-            self.sword_offsetx = 150
-            self.sword_offsety = -50 
+            self.sword_offsetx = self.scale(50)
+            self.sword_offsety = self.scale(-10)
             self.striking = False
             self.sword_hurtbox = False
             self.sword_time = .2
@@ -91,7 +97,7 @@ class Game:
             self.sword_come_in_time = .08*self.fps
 
             # shield
-            self.shield_offsetx = 150
+            self.shield_offsetx = self.scale(50)
             self.shield_offsety = 0
             self.shielding = False
             self.shield_block = False
@@ -129,8 +135,9 @@ class Game:
             self.facing_left = facing_left
             if self.facing_left is True:
                 self.sprite = pygame.image.load('sprites/red_player.png').convert_alpha()
+                self.sprite = pygame.transform.scale(self.sprite, self.scale((50,50)))
                 self.flip_player()
-                self.rect.right = self.screen.get_width()-100
+                self.rect.right = self.screen.get_width()-self.scale(100)
                 self.input_dict = {
                     'jump': pygame.K_UP,
                     'left': pygame.K_LEFT,
@@ -176,8 +183,8 @@ class Game:
             self.sprite = pygame.transform.flip(self.sprite, True, False)
             self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
             self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
-            self.sword_offsetx = (self.sword_offsetx+15)*-1
-            self.shield_offsetx = (self.shield_offsetx-130)*-1
+            self.sword_offsetx = (self.sword_offsetx+self.scale(15))*-1
+            self.shield_offsetx = (self.shield_offsetx-self.scale(130))*-1
             self.dash_mod *= -1
 
         def check_fall(self):
@@ -407,7 +414,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        # monitor_size = (1222,600)
+        monitor_size = (2000,1000)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -438,13 +445,13 @@ class Game:
     def show_background(self):
         '''Draws background.'''
         self.screen.fill((0,0,0))
-        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen.get_height()*.78, self.screen.get_width(),self.scale(20)))
+        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen_size[1]*.78, self.screen_size[0],self.scale(10)))
 
     def _setup_elements(self):
         '''Creates character and environment elements.'''
 
-        self.player1 = self.Player(self.screen, facing_left = False)
-        self.player2 = self.Player(self.screen, facing_left = True)
+        self.player1 = self.Player(self.screen, self.scale, facing_left = False)
+        self.player2 = self.Player(self.screen, self.scale, facing_left = True)
 
     def _setup_fonts(self):
         '''Creates fonts for various texts.'''
@@ -692,7 +699,7 @@ class Game:
             
     def _calc_player_collision(self,playera,playerb):
         
-        playera.on_top = self._edge_detection(playera.rect.bottom, playerb.rect.top, 30)
+        playera.on_top = self._edge_detection(playera.rect.bottom, playerb.rect.top)
 
         if (playera.on_top is False) & (playerb.on_top is False):
             if playera.rect.x < playerb.rect.x:
@@ -709,9 +716,9 @@ class Game:
             if playerb.Y_change < 0:
                 playerb.Y_change = 0
     
-    def _edge_detection(self,edgea,edgeb,margin=15):
+    def _edge_detection(self,edgea,edgeb,margin=30):
 
-        return abs(edgea - edgeb) < margin
+        return abs(edgea - edgeb) < self.scale(margin)
 
     def _handle_sword_collisions(self):
 
@@ -729,9 +736,9 @@ class Game:
                 if playerb.shield_block is False:
 
                     if playera.rect.x < playerb.rect.x:
-                        playerb.knockback_speed = 25
+                        playerb.knockback_speed = self.scale(25)
                     else:
-                        playerb.knockback_speed = -25
+                        playerb.knockback_speed = self.scale(-25)
                     
                     if playerb.invinsible is False:    
                         playerb.deploy_knockback()
@@ -743,9 +750,9 @@ class Game:
                     if (playera.knockback is False) & (playera.stamina > 0):
                         
                         if playera.rect.x < playerb.rect.x:
-                            playera.knockback_speed = -25
+                            playera.knockback_speed = self.scale(-25)
                         else:
-                            playera.knockback_speed = 25
+                            playera.knockback_speed = self.scale(25)
 
                         self.sword_hit_shield_sound.play()
                         playera.stamina -= 1
