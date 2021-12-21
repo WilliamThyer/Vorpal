@@ -55,7 +55,7 @@ class Game:
             self.rect.bottom = self.ground
             self.X_change = 0
             self.Y_change = 0
-            self.speed = self.scale(10)
+            self.speed = self.scale(8)
 
             # jumping
             self.jumping = False
@@ -84,7 +84,7 @@ class Game:
             self.knockback = False
             self.knockback_time = .125
             self.knockback_counter = self.knockback_time*self.fps
-            self.knockback_speed = self.scale(25)
+            self.knockback_speed = self.scale(15)
             
             # sword
             self.sword_offsetx = self.scale(50)
@@ -183,8 +183,8 @@ class Game:
             self.sprite = pygame.transform.flip(self.sprite, True, False)
             self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
             self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
-            self.sword_offsetx = (self.sword_offsetx+self.scale(15))*-1
-            self.shield_offsetx = (self.shield_offsetx-self.scale(130))*-1
+            self.sword_offsetx = (self.sword_offsetx+self.scale(25))*-1
+            self.shield_offsetx = (self.shield_offsetx-self.scale(45))*-1
             self.dash_mod *= -1
 
         def check_fall(self):
@@ -405,6 +405,7 @@ class Game:
 
     def scale(self, val):
         
+        # divide by 60 is so I can pass same values as before scaling was implemented
         if isinstance(val,(int,float)):
             return math.floor((val/60)*self.scale_factor)
         if isinstance(val,(list,tuple)):
@@ -414,7 +415,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        monitor_size = (2000,1000)
+        # monitor_size = (500,600)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -736,9 +737,9 @@ class Game:
                 if playerb.shield_block is False:
 
                     if playera.rect.x < playerb.rect.x:
-                        playerb.knockback_speed = self.scale(25)
+                        playerb.knockback_speed = abs(playera.knockback_speed)
                     else:
-                        playerb.knockback_speed = self.scale(-25)
+                        playerb.knockback_speed = -abs(playera.knockback_speed)
                     
                     if playerb.invinsible is False:    
                         playerb.deploy_knockback()
@@ -750,9 +751,9 @@ class Game:
                     if (playera.knockback is False) & (playera.stamina > 0):
                         
                         if playera.rect.x < playerb.rect.x:
-                            playera.knockback_speed = self.scale(-25)
+                            playera.knockback_speed = -abs(playera.knockback_speed)
                         else:
-                            playera.knockback_speed = self.scale(25)
+                            playera.knockback_speed = abs(playera.knockback_speed)
 
                         self.sword_hit_shield_sound.play()
                         playera.stamina -= 1
