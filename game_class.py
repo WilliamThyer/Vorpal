@@ -14,6 +14,7 @@ class Game:
         self.fps_clock = pygame.time.Clock()
         self.menu = True
         self.main_menu = True
+        self.screen_ratio = (16,9)
 
         self._setup_screen()
         self._setup_elements()
@@ -395,20 +396,35 @@ class Game:
             ai_key_dict_copy[random.sample(self.ai_key_dict.keys(),1)[0]] = 1
             return ai_key_dict_copy
 
+    def scale(self, val):
+        
+        if isinstance(val,(int,float)):
+            return math.floor((val/60)*self.scale_factor)
+        if isinstance(val,(list,tuple)):
+            return [math.floor((i/60)*self.scale_factor) for i in val]
+
     def _setup_screen(self):
         '''Creates pygame screen and draws background.'''
-        monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h-80)
-        self.screen = pygame.display.set_mode(monitor_size,pygame.RESIZABLE)
+
+        monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
+        # monitor_size = (1222,600)
+        
+        horiz = monitor_size[0]/self.screen_ratio[0]
+        vert = monitor_size[1]/self.screen_ratio[1]
+        self.scale_factor = min(horiz,vert)
+        self.screen_size = (math.floor(self.scale_factor*self.screen_ratio[0]),math.floor(self.scale_factor*self.screen_ratio[1]))
+
+        self.screen = pygame.display.set_mode(self.screen_size)
         
         # title and icon
         pygame.display.set_caption('Battle')
 
         self.blue_heart_sprite = pygame.image.load('sprites/blue_heart.png').convert_alpha()
-        self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, (30, 30))
+        self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, self.scale((30,30)))
         self.red_heart_sprite = pygame.image.load('sprites/red_heart.png').convert_alpha()
-        self.red_heart_sprite = pygame.transform.scale(self.red_heart_sprite, (30, 30))        
+        self.red_heart_sprite = pygame.transform.scale(self.red_heart_sprite, self.scale((30,30)))        
         self.stamina_sprite = pygame.image.load('sprites/stamina.png').convert_alpha()
-        self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, (60, 60))
+        self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, self.scale((60,60)))
 
     def _setup_audio(self):
 
@@ -422,7 +438,7 @@ class Game:
     def show_background(self):
         '''Draws background.'''
         self.screen.fill((0,0,0))
-        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen.get_height()*.78, self.screen.get_width(),20))
+        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen.get_height()*.78, self.screen.get_width(),self.scale(20)))
 
     def _setup_elements(self):
         '''Creates character and environment elements.'''
@@ -433,10 +449,8 @@ class Game:
     def _setup_fonts(self):
         '''Creates fonts for various texts.'''
 
-        self.score_font = pygame.font.Font('freesansbold.ttf', 32)
-        
-        over_font_size = round(min(self.screen.get_width()*.08,self.screen.get_height()*.08))
-        self.over_font = pygame.font.Font('freesansbold.ttf', over_font_size)
+        self.score_font = pygame.font.Font('freesansbold.ttf', self.scale(32))
+        self.over_font = pygame.font.Font('freesansbold.ttf', self.scale(48))
 
     def handle_menu(self):
 
@@ -449,25 +463,25 @@ class Game:
             
             keys = (pygame.event.get(pygame.KEYDOWN))
             if len(keys) > 0:
-                if keys[0].key == pygame.K_f:
+                if keys[0].key == self.player1.input_dict['right']:
                     if self.player1.life < 9:
                         self.player1.life += 1
                         self.player1.stamina -= 1
                         self.player1.max_stamina -=1
 
-                if keys[0].key == pygame.K_g:
+                if keys[0].key == self.player1.input_dict['left']:
                     if self.player1.stamina < 9:
                         self.player1.life -= 1
                         self.player1.stamina += 1
                         self.player1.max_stamina +=1
 
-                if keys[0].key == pygame.K_h:
+                if keys[0].key == self.player2.input_dict['left']:
                     if self.player2.life < 9:
                         self.player2.life += 1
                         self.player2.stamina -= 1
                         self.player2.max_stamina -=1
 
-                if keys[0].key == pygame.K_j:
+                if keys[0].key == self.player2.input_dict['right']:
                     if self.player2.stamina < 9:
                         self.player2.life -= 1
                         self.player2.stamina += 1
@@ -483,19 +497,11 @@ class Game:
 
         self._show_lives()
         self._show_stamina()
-        # f = self.score_font.render('f', True, (255,255,255))
-        # g = self.score_font.render('g', True, (255,255,255))
-        # h = self.score_font.render('h', True, (255,255,255))
-        # j = self.score_font.render('j', True, (255,255,255))
-        # self.screen.blit(f, (80, 25))
-        # self.screen.blit(g, (80, 65))
-        # self.screen.blit(h, (self.screen.get_width() - 90, 25))
-        # self.screen.blit(j, (self.screen.get_width() - 90, 65))
 
         space_text = self.over_font.render('Press SPACE to start', True, (255,255,255))
         stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
 
-        half_width,half_height = self.screen.get_width()/2,self.screen.get_height()/2
+        half_width,half_height = self.screen_size[0]/2,self.screen_size[1]/2
 
         space_text_rect = space_text.get_rect(center=(half_width,half_height*.5))
         self.screen.blit(space_text, space_text_rect)
@@ -511,23 +517,33 @@ class Game:
 
     def _show_lives(self):
 
-        self.screen.blit(self.blue_heart_sprite, (15, 23))
-        self.screen.blit(self.red_heart_sprite, (self.screen.get_width() - 40, 23))
+        self.screen.blit(self.blue_heart_sprite, self.scale((15, 23)))
+        self.screen.blit(self.red_heart_sprite, self.scale((925,23)))
+
+        y = self.scale(23)
+        size = self.scale(30)
 
         for i in range(self.player1.life):
-            pygame.draw.rect(self.screen,(99,155,255),[60+30*i, 23, 30, 30])
+            x = self.scale(60) + self.scale(30)*i
+            pygame.draw.rect(self.screen,(99,155,255),[x, y, size, size])
         for i in range(self.player2.life):
-            pygame.draw.rect(self.screen,(217,87,99),[self.screen.get_width()-80-30*i, 23, 30, 30])
+            x = self.screen_size[0]-self.scale(80)-self.scale(30)*i
+            pygame.draw.rect(self.screen,(217,87,99),[x, y, size, size])
 
     def _show_stamina(self):
 
+        y = self.scale(70)
+        size = self.scale(30)
+
         for i in range(self.player1.stamina):
-            pygame.draw.rect(self.screen,(255,255,255),[60+30*i, 70, 30, 30])
+            x = self.scale(60) + self.scale(30)*i
+            pygame.draw.rect(self.screen,(255,255,255),[x, y, size, size])
         for i in range(self.player2.stamina):
-            pygame.draw.rect(self.screen,(255,255,255),[self.screen.get_width()-80-30*i, 70, 30, 30])
+            x = self.screen_size[0]-self.scale(80)-self.scale(30)*i
+            pygame.draw.rect(self.screen,(255,255,255),[x, y, size, size])
         
-        self.screen.blit(self.stamina_sprite, (0, 50))
-        self.screen.blit(self.stamina_sprite, (self.screen.get_width() - 60, 50))
+        self.screen.blit(self.stamina_sprite, self.scale((0, 50)))
+        self.screen.blit(self.stamina_sprite, self.scale((905, 50)))
 
     def handle_events(self):
         '''Quits game if exit is pressed.'''
