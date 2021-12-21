@@ -14,6 +14,7 @@ class Game:
         self.fps_clock = pygame.time.Clock()
         self.menu = True
         self.main_menu = True
+        self.screen_ratio = (16,9)
 
         self._setup_screen()
         self._setup_elements()
@@ -26,40 +27,46 @@ class Game:
                     
     class Player(pygame.sprite.Sprite):
         
-        def __init__(self, screen, fps = 120, facing_left = False):
+        def __init__(self, screen, scale, fps = 120, facing_left = False):
 
             # Call the parent class (Sprite) constructor
             pygame.sprite.Sprite.__init__(self)
 
             self.screen = screen
+            self.scale = scale
             self.fps = fps
             self.ground = round(self.screen.get_height()*0.78)
 
             # sprites
             self.sprite = pygame.image.load('sprites/blue_player.png').convert_alpha()
+            self.sprite = pygame.transform.scale(self.sprite, self.scale((50,50)))
             self.rect = self.sprite.get_rect()
+
             self.sword_sprite = pygame.image.load('sprites/sword.png').convert_alpha()
+            self.sword_sprite = pygame.transform.scale(self.sword_sprite, self.scale((75,30)))
             self.sword_rect = self.sword_sprite.get_rect()
+
             self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
+            self.shield_sprite = pygame.transform.scale(self.shield_sprite, self.scale((5,50)))
             self.shield_rect = self.shield_sprite.get_rect()
             
             # positioning
-            self.rect.left = 100
+            self.rect.left = self.scale(100)
             self.rect.bottom = self.ground
             self.X_change = 0
             self.Y_change = 0
-            self.speed = 15
+            self.speed = self.scale(8)
 
             # jumping
             self.jumping = False
-            self.jump_speed = [0,0,-40,-80,-80,-60,-30,-10,-10,-2,-2,0,0,0,0]
+            self.jump_speed = self.scale([0,0,-20,-50,-50,-30,-15,-5,-5,-2,-2,0,0,0,0])
             self.jump_fps_time = len(self.jump_speed)
             self.jump_counter = self.jump_fps_time
 
             # falling
             self.falling = False
             self.fall_ticker = 0
-            self.initial_fall_speed = 5
+            self.initial_fall_speed = self.scale(3)
             self.on_top = False
 
             # dashing
@@ -69,7 +76,7 @@ class Game:
             self.press_timer = 0
             self.dashing = False
             self.dash_mod = -1
-            self.dash_speed = [0,-40,-50,-50,-50,-50,-50,-40,-40]
+            self.dash_speed = self.scale([0,-30,-30,-30,-30,-30,-30])
             self.dash_fps_time = len(self.dash_speed) 
             self.dash_counter = self.dash_fps_time
 
@@ -77,11 +84,11 @@ class Game:
             self.knockback = False
             self.knockback_time = .125
             self.knockback_counter = self.knockback_time*self.fps
-            self.knockback_speed = 25
+            self.knockback_speed = self.scale(15)
             
             # sword
-            self.sword_offsetx = 150
-            self.sword_offsety = -50 
+            self.sword_offsetx = self.scale(50)
+            self.sword_offsety = self.scale(-10)
             self.striking = False
             self.sword_hurtbox = False
             self.sword_time = .2
@@ -90,7 +97,7 @@ class Game:
             self.sword_come_in_time = .08*self.fps
 
             # shield
-            self.shield_offsetx = 150
+            self.shield_offsetx = self.scale(50)
             self.shield_offsety = 0
             self.shielding = False
             self.shield_block = False
@@ -128,8 +135,9 @@ class Game:
             self.facing_left = facing_left
             if self.facing_left is True:
                 self.sprite = pygame.image.load('sprites/red_player.png').convert_alpha()
+                self.sprite = pygame.transform.scale(self.sprite, self.scale((50,50)))
                 self.flip_player()
-                self.rect.right = self.screen.get_width()-100
+                self.rect.right = self.screen.get_width()-self.scale(100)
                 self.input_dict = {
                     'jump': pygame.K_UP,
                     'left': pygame.K_LEFT,
@@ -175,8 +183,8 @@ class Game:
             self.sprite = pygame.transform.flip(self.sprite, True, False)
             self.sword_sprite = pygame.transform.flip(self.sword_sprite, True, False)
             self.shield_sprite = pygame.transform.flip(self.shield_sprite, True, False)
-            self.sword_offsetx = (self.sword_offsetx+15)*-1
-            self.shield_offsetx = (self.shield_offsetx-130)*-1
+            self.sword_offsetx = (self.sword_offsetx+self.scale(25))*-1
+            self.shield_offsetx = (self.shield_offsetx-self.scale(45))*-1
             self.dash_mod *= -1
 
         def check_fall(self):
@@ -395,20 +403,35 @@ class Game:
             ai_key_dict_copy[random.sample(self.ai_key_dict.keys(),1)[0]] = 1
             return ai_key_dict_copy
 
+    def scale(self, val):
+        
+        # divide by 60 is so I can pass same values as before scaling was implemented
+        if isinstance(val,(int,float)):
+            return math.floor((val/60)*self.scale_factor)
+        if isinstance(val,(list,tuple)):
+            return [math.floor((i/60)*self.scale_factor) for i in val]
+
     def _setup_screen(self):
         '''Creates pygame screen and draws background.'''
-        monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h-80)
-        self.screen = pygame.display.set_mode(monitor_size,pygame.RESIZABLE)
+
+        monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
+        
+        horiz = monitor_size[0]/self.screen_ratio[0]
+        vert = monitor_size[1]/self.screen_ratio[1]
+        self.scale_factor = min(horiz,vert)
+        self.screen_size = (math.floor(self.scale_factor*self.screen_ratio[0]),math.floor(self.scale_factor*self.screen_ratio[1]))
+
+        self.screen = pygame.display.set_mode(self.screen_size)
         
         # title and icon
         pygame.display.set_caption('Battle')
 
         self.blue_heart_sprite = pygame.image.load('sprites/blue_heart.png').convert_alpha()
-        self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, (30, 30))
+        self.blue_heart_sprite = pygame.transform.scale(self.blue_heart_sprite, self.scale((30,30)))
         self.red_heart_sprite = pygame.image.load('sprites/red_heart.png').convert_alpha()
-        self.red_heart_sprite = pygame.transform.scale(self.red_heart_sprite, (30, 30))        
+        self.red_heart_sprite = pygame.transform.scale(self.red_heart_sprite, self.scale((30,30)))        
         self.stamina_sprite = pygame.image.load('sprites/stamina.png').convert_alpha()
-        self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, (60, 60))
+        self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, self.scale((60,60)))
 
     def _setup_audio(self):
 
@@ -422,21 +445,19 @@ class Game:
     def show_background(self):
         '''Draws background.'''
         self.screen.fill((0,0,0))
-        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen.get_height()*.78, self.screen.get_width(),20))
+        pygame.draw.rect(self.screen,(255,255,255),(0,self.screen_size[1]*.78, self.screen_size[0],self.scale(10)))
 
     def _setup_elements(self):
         '''Creates character and environment elements.'''
 
-        self.player1 = self.Player(self.screen, facing_left = False)
-        self.player2 = self.Player(self.screen, facing_left = True)
+        self.player1 = self.Player(self.screen, self.scale, facing_left = False)
+        self.player2 = self.Player(self.screen, self.scale, facing_left = True)
 
     def _setup_fonts(self):
         '''Creates fonts for various texts.'''
 
-        self.score_font = pygame.font.Font('freesansbold.ttf', 32)
-        
-        over_font_size = round(min(self.screen.get_width()*.08,self.screen.get_height()*.08))
-        self.over_font = pygame.font.Font('freesansbold.ttf', over_font_size)
+        self.score_font = pygame.font.Font('freesansbold.ttf', self.scale(32))
+        self.over_font = pygame.font.Font('freesansbold.ttf', self.scale(48))
 
     def handle_menu(self):
 
@@ -449,25 +470,25 @@ class Game:
             
             keys = (pygame.event.get(pygame.KEYDOWN))
             if len(keys) > 0:
-                if keys[0].key == pygame.K_f:
+                if keys[0].key == self.player1.input_dict['right']:
                     if self.player1.life < 9:
                         self.player1.life += 1
                         self.player1.stamina -= 1
                         self.player1.max_stamina -=1
 
-                if keys[0].key == pygame.K_g:
+                if keys[0].key == self.player1.input_dict['left']:
                     if self.player1.stamina < 9:
                         self.player1.life -= 1
                         self.player1.stamina += 1
                         self.player1.max_stamina +=1
 
-                if keys[0].key == pygame.K_h:
+                if keys[0].key == self.player2.input_dict['left']:
                     if self.player2.life < 9:
                         self.player2.life += 1
                         self.player2.stamina -= 1
                         self.player2.max_stamina -=1
 
-                if keys[0].key == pygame.K_j:
+                if keys[0].key == self.player2.input_dict['right']:
                     if self.player2.stamina < 9:
                         self.player2.life -= 1
                         self.player2.stamina += 1
@@ -483,19 +504,11 @@ class Game:
 
         self._show_lives()
         self._show_stamina()
-        # f = self.score_font.render('f', True, (255,255,255))
-        # g = self.score_font.render('g', True, (255,255,255))
-        # h = self.score_font.render('h', True, (255,255,255))
-        # j = self.score_font.render('j', True, (255,255,255))
-        # self.screen.blit(f, (80, 25))
-        # self.screen.blit(g, (80, 65))
-        # self.screen.blit(h, (self.screen.get_width() - 90, 25))
-        # self.screen.blit(j, (self.screen.get_width() - 90, 65))
 
         space_text = self.over_font.render('Press SPACE to start', True, (255,255,255))
         stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
 
-        half_width,half_height = self.screen.get_width()/2,self.screen.get_height()/2
+        half_width,half_height = self.screen_size[0]/2,self.screen_size[1]/2
 
         space_text_rect = space_text.get_rect(center=(half_width,half_height*.5))
         self.screen.blit(space_text, space_text_rect)
@@ -511,23 +524,33 @@ class Game:
 
     def _show_lives(self):
 
-        self.screen.blit(self.blue_heart_sprite, (15, 23))
-        self.screen.blit(self.red_heart_sprite, (self.screen.get_width() - 40, 23))
+        self.screen.blit(self.blue_heart_sprite, self.scale((15, 23)))
+        self.screen.blit(self.red_heart_sprite, self.scale((925,23)))
+
+        y = self.scale(23)
+        size = self.scale(30)
 
         for i in range(self.player1.life):
-            pygame.draw.rect(self.screen,(99,155,255),[60+30*i, 23, 30, 30])
+            x = self.scale(60) + self.scale(30)*i
+            pygame.draw.rect(self.screen,(99,155,255),[x, y, size, size])
         for i in range(self.player2.life):
-            pygame.draw.rect(self.screen,(217,87,99),[self.screen.get_width()-80-30*i, 23, 30, 30])
+            x = self.screen_size[0]-self.scale(80)-self.scale(30)*i
+            pygame.draw.rect(self.screen,(217,87,99),[x, y, size, size])
 
     def _show_stamina(self):
 
+        y = self.scale(70)
+        size = self.scale(30)
+
         for i in range(self.player1.stamina):
-            pygame.draw.rect(self.screen,(255,255,255),[60+30*i, 70, 30, 30])
+            x = self.scale(60) + self.scale(30)*i
+            pygame.draw.rect(self.screen,(255,255,255),[x, y, size, size])
         for i in range(self.player2.stamina):
-            pygame.draw.rect(self.screen,(255,255,255),[self.screen.get_width()-80-30*i, 70, 30, 30])
+            x = self.screen_size[0]-self.scale(80)-self.scale(30)*i
+            pygame.draw.rect(self.screen,(255,255,255),[x, y, size, size])
         
-        self.screen.blit(self.stamina_sprite, (0, 50))
-        self.screen.blit(self.stamina_sprite, (self.screen.get_width() - 60, 50))
+        self.screen.blit(self.stamina_sprite, self.scale((0, 50)))
+        self.screen.blit(self.stamina_sprite, self.scale((905, 50)))
 
     def handle_events(self):
         '''Quits game if exit is pressed.'''
@@ -676,7 +699,7 @@ class Game:
             
     def _calc_player_collision(self,playera,playerb):
         
-        playera.on_top = self._edge_detection(playera.rect.bottom, playerb.rect.top, 30)
+        playera.on_top = self._edge_detection(playera.rect.bottom, playerb.rect.top)
 
         if (playera.on_top is False) & (playerb.on_top is False):
             if playera.rect.x < playerb.rect.x:
@@ -693,9 +716,9 @@ class Game:
             if playerb.Y_change < 0:
                 playerb.Y_change = 0
     
-    def _edge_detection(self,edgea,edgeb,margin=15):
+    def _edge_detection(self,edgea,edgeb,margin=30):
 
-        return abs(edgea - edgeb) < margin
+        return abs(edgea - edgeb) < self.scale(margin)
 
     def _handle_sword_collisions(self):
 
@@ -713,9 +736,9 @@ class Game:
                 if playerb.shield_block is False:
 
                     if playera.rect.x < playerb.rect.x:
-                        playerb.knockback_speed = 25
+                        playerb.knockback_speed = abs(playera.knockback_speed)
                     else:
-                        playerb.knockback_speed = -25
+                        playerb.knockback_speed = -abs(playera.knockback_speed)
                     
                     if playerb.invinsible is False:    
                         playerb.deploy_knockback()
@@ -727,9 +750,9 @@ class Game:
                     if (playera.knockback is False) & (playera.stamina > 0):
                         
                         if playera.rect.x < playerb.rect.x:
-                            playera.knockback_speed = -25
+                            playera.knockback_speed = -abs(playera.knockback_speed)
                         else:
-                            playera.knockback_speed = 25
+                            playera.knockback_speed = abs(playera.knockback_speed)
 
                         self.sword_hit_shield_sound.play()
                         playera.stamina -= 1
