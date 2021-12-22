@@ -89,6 +89,8 @@ class Game:
             # sword
             self.sword_offsetx = self.scale(50)
             self.sword_offsety = self.scale(-10)
+            self.sword_rect.x = self.rect.x+self.sword_offsetx
+            self.sword_rect.y = self.rect.y-self.sword_offsety
             self.striking = False
             self.sword_hurtbox = False
             self.sword_time = .2
@@ -99,6 +101,8 @@ class Game:
             # shield
             self.shield_offsetx = self.scale(50)
             self.shield_offsety = 0
+            self.shield_rect.x = self.rect.x+self.shield_offsetx
+            self.shield_rect.y = self.rect.y-self.shield_offsety
             self.shielding = False
             self.shield_block = False
             self.shield_time = .24
@@ -355,13 +359,15 @@ class Game:
 
                 self.shield_counter -= 1
                 self.screen.blit(self.shield_sprite, (self.rect.x+self.shield_offsetx, self.rect.y-self.shield_offsety))
+                self.shield_rect.x = self.rect.x+self.shield_offsetx
+                self.shield_rect.y = self.rect.y-self.shield_offsety
                 self.shield_block = True
-                self.invinsible = True
+                # self.invinsible = True
                 
                 if self.shield_counter <= 0:
                     self.shielding = False
                     self.shield_block = False
-                    self.invinsible = False
+                    # self.invinsible = False
 
         def deploy_iframes(self):
 
@@ -378,6 +384,11 @@ class Game:
                     self.invinsible = False
                     self.i_frames_invinsible = False
                     self.i_frames = 60
+        
+        def take_hit(self):
+            self.life -= 1
+            self.deploy_knockback()
+            self.deploy_iframes()
             
         def is_ready(self):
             '''Returns True if player is ready for new inputs. (Can be expanded with other elements like self.is_jumping).'''
@@ -415,6 +426,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
+        monitor_size = (1000,700)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -708,7 +720,7 @@ class Game:
                 if playerb.X_change < 0:
                     playerb.X_change = 0
         
-        # if player a is above player gb
+        # if player a is above player b
         if playera.rect.y < playerb.rect.y:
             # player a can't fall, player b can't jump
             if playera.Y_change > 0:
@@ -727,34 +739,47 @@ class Game:
 
     def _calc_sword_collisions(self,playera,playerb):
         
+        # if sword is deployed
         if playera.sword_hurtbox is True:
-
-            collide = bool(playera.sword_rect.colliderect(playerb.rect))
             
-            if collide is True:
+            # check collisions
+            playerb_collide = bool(playera.sword_rect.colliderect(playerb.rect))
+            shieldb_collide = bool(playera.sword_rect.colliderect(playerb.shield_rect))
+            
+            # calc left/right for knockback
+            if playera.rect.centerx < playerb.rect.centerx:
+                playerb.knockback_speed = abs(playerb.knockback_speed)
+                playera.knockback_speed = -abs(playerb.knockback_speed)
+            else:
+                playerb.knockback_speed = -abs(playerb.knockback_speed)
+                playera.knockback_speed = abs(playerb.knockback_speed)
+            
+            # hit shield and not player
+            if shieldb_collide and not playerb_collide:
+                self.do_shield_hit(playera)
 
-                if playerb.shield_block is False:
-
-                    if playera.rect.x < playerb.rect.x:
-                        playerb.knockback_speed = abs(playera.knockback_speed)
+            # hit player
+            if playerb_collide:
+                
+                if playera.rect.centerx < playerb.rect.centerx:
+                    if (playerb.facing_left) and (playerb.shield_block):
+                        self.do_shield_hit(playera)
                     else:
-                        playerb.knockback_speed = -abs(playera.knockback_speed)
-                    
-                    if playerb.invinsible is False:    
-                        playerb.deploy_knockback()
-                        playerb.life -= 1
-                        playerb.deploy_iframes()
-                        self.sword_hit_sound.play()
-            
-                else:
-                    if (playera.knockback is False) & (playera.stamina > 0):
-                        
-                        if playera.rect.x < playerb.rect.x:
-                            playera.knockback_speed = -abs(playera.knockback_speed)
-                        else:
-                            playera.knockback_speed = abs(playera.knockback_speed)
+                        self.do_hit(playerb)
 
-                        self.sword_hit_shield_sound.play()
-                        playera.stamina -= 1
-
-                        playera.deploy_knockback()
+                if playera.rect.centerx > playerb.rect.centerx:
+                    if (not playerb.facing_left) and (playerb.shield_block):
+                        self.do_shield_hit(playera)
+                    else:
+                        self.do_hit(playerb)
+    
+    def do_hit(self, player):
+        if player.invinsible is False: 
+            player.take_hit()
+            self.sword_hit_sound.play()
+    
+    def do_shield_hit(self,player):
+        self.sword_hit_shield_sound.play()
+        player.deploy_knockback()
+        if player.stamina > 0:
+            player.stamina -= 1
