@@ -737,7 +737,7 @@ class Game:
         self._calc_sword_collisions(self.player1, self.player2)
         self._calc_sword_collisions(self.player2, self.player1)
 
-    def _calc_sword_collisions(self,playera,playerb):
+    def _calc_sword_collisions(self, playera, playerb):
         
         # if sword is deployed
         if playera.sword_hurtbox is True:
