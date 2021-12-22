@@ -216,7 +216,7 @@ class Game:
 
         def deploy_jump(self):
             
-            if self.jumping is False:
+            if (self.jumping is False) & (self.falling is False):
                 
                 self.jumping = True
                 self.jump_counter = self.jump_fps_time
@@ -779,7 +779,7 @@ class Game:
             self.sword_hit_sound.play()
     
     def do_shield_hit(self,player):
-        self.sword_hit_shield_sound.play()
-        player.deploy_knockback()
-        if player.stamina > 0:
+        if (player.stamina > 0) & (player.knockback is False):
             player.stamina -= 1
+            self.sword_hit_shield_sound.play()
+            player.deploy_knockback()
