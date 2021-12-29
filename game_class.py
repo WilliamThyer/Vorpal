@@ -362,12 +362,10 @@ class Game:
                 self.shield_rect.x = self.rect.x+self.shield_offsetx
                 self.shield_rect.y = self.rect.y-self.shield_offsety
                 self.shield_block = True
-                # self.invinsible = True
                 
                 if self.shield_counter <= 0:
                     self.shielding = False
                     self.shield_block = False
-                    # self.invinsible = False
 
         def deploy_iframes(self):
 
@@ -426,7 +424,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        monitor_size = (1000,700)
+        # monitor_size = (1000,700)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -668,10 +666,7 @@ class Game:
 
                 player.X_change = player.speed
                 player.check_dash('Right')
-            
-            if (not keys[player.input_dict['left']]) & (not keys[player.input_dict['right']]):
-                player.check_dash()
-            
+                        
             # jumping
             if keys[player.input_dict['jump']]:
                 player.deploy_jump()
@@ -689,6 +684,7 @@ class Game:
                 player.X_change = 0
             if not keys[player.input_dict['right']] and not keys[player.input_dict['left']]:
                 player.X_change = 0
+                player.check_dash()
 
     def handle_collisions(self):
         '''Handles collisions from both players and swords.'''
@@ -744,7 +740,11 @@ class Game:
             
             # check collisions
             playerb_collide = bool(playera.sword_rect.colliderect(playerb.rect))
-            shieldb_collide = bool(playera.sword_rect.colliderect(playerb.shield_rect))
+            
+            if playerb.shielding is True:
+                shieldb_collide = bool(playera.sword_rect.colliderect(playerb.shield_rect))
+            else:
+                shieldb_collide = False
             
             # calc left/right for knockback
             if playera.rect.centerx < playerb.rect.centerx:
