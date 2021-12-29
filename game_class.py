@@ -779,7 +779,7 @@ class Game:
             self.sword_hit_sound.play()
     
     def do_shield_hit(self,player):
-        if (player.stamina > 0) & (player.knockback is False):
-            player.stamina -= 1
+        if player.knockback is False:
+            player.stamina = 0
             self.sword_hit_shield_sound.play()
             player.deploy_knockback()
