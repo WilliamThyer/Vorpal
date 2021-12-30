@@ -138,6 +138,7 @@ class Game:
             # sounds
             self.shield_sound = pygame.mixer.Sound('sprites/sounds/shield.mp3')
             self.sword_swoosh_sound = pygame.mixer.Sound('sprites/sounds/sword_swoosh.wav')
+            self.sword_hit_ground_sound = pygame.mixer.Sound('sprites/sounds/sword_hit_ground.wav')
             self.jump_sound = pygame.mixer.Sound('sprites/sounds/jump.mp3')
             self.land_sound = pygame.mixer.Sound('sprites/sounds/land.mp3')
             self.dash_sound = pygame.mixer.Sound('sprites/sounds/dash.mp3')
@@ -391,6 +392,7 @@ class Game:
                         self.deploy_land_downstrike(self.land_downstrike_stun_time_long)
 
         def deploy_land_downstrike(self, timer):
+            self.sword_hit_ground_sound.play()
             self.land_downstrike_stun = True
             self.land_downstrike_timer = timer
             self.X_change = 0
@@ -511,6 +513,7 @@ class Game:
 
         self.sword_hit_sound = pygame.mixer.Sound('sprites/sounds/sword_hit.mp3')
         self.sword_hit_shield_sound = pygame.mixer.Sound('sprites/sounds/sword_hit_shield.wav')
+        self.sword_hit_shield_sound.set_volume(.3)
         
     def update_display(self):
         pygame.display.update()
