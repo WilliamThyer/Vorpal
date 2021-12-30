@@ -23,7 +23,7 @@ class Game:
 
         self.ai = ai
         if self.ai is True:
-            ai_enemy = self.AIEnemy()
+            self.ai_enemy = self.AIEnemy()
                     
     class Player(pygame.sprite.Sprite):
         
@@ -45,6 +45,9 @@ class Game:
             self.sword_sprite = pygame.image.load('sprites/sword.png').convert_alpha()
             self.sword_sprite = pygame.transform.scale(self.sword_sprite, self.scale((75,30)))
             self.sword_rect = self.sword_sprite.get_rect()
+            
+            self.downstrike_sprite = pygame.transform.rotate(self.sword_sprite,-90)
+            self.downstrike_rect = self.downstrike_sprite.get_rect()
 
             self.shield_sprite = pygame.image.load('sprites/shield.png').convert_alpha()
             self.shield_sprite = pygame.transform.scale(self.shield_sprite, self.scale((5,50)))
@@ -86,17 +89,29 @@ class Game:
             self.knockback_counter = self.knockback_time*self.fps
             self.knockback_speed = self.scale(15)
             
-            # sword
-            self.sword_offsetx = self.scale(50)
-            self.sword_offsety = self.scale(-10)
-            self.sword_rect.x = self.rect.x+self.sword_offsetx
-            self.sword_rect.y = self.rect.y-self.sword_offsety
-            self.striking = False
+            # striking
             self.sword_hurtbox = False
+            self.striking = False
+            
             self.sword_time = .2
             self.sword_fps_time = self.sword_time*self.fps
             self.sword_come_out_time = self.sword_fps_time - .02*self.fps
             self.sword_come_in_time = .08*self.fps
+            
+            self.sword_offsetx = self.scale(50)
+            self.sword_offsety = self.scale(-10)
+            self.sword_rect.x = self.rect.x+self.sword_offsetx
+            self.sword_rect.y = self.rect.y-self.sword_offsety
+
+            # downstrike
+            self.downstriking = False
+            self.downstrike_offsetx = self.scale(10)
+            self.downstrike_offsety = self.scale(-30)
+            self.downstrike_rect.x = self.rect.x+self.downstrike_offsetx
+            self.downstrike_rect.y = self.rect.y-self.downstrike_offsety
+            self.land_downstrike_stun_time_long = 60
+            self.land_downstrike_stun_time_short = 10
+            self.land_downstrike_stun = False
 
             # shield
             self.shield_offsetx = self.scale(50)
@@ -132,6 +147,7 @@ class Game:
                 'jump': pygame.K_w,
                 'left': pygame.K_a,
                 'right': pygame.K_d,
+                'down': pygame.K_s,
                 'sword': pygame.K_f,
                 'shield': pygame.K_g
             }
@@ -146,6 +162,7 @@ class Game:
                     'jump': pygame.K_UP,
                     'left': pygame.K_LEFT,
                     'right': pygame.K_RIGHT,
+                    'down': pygame.K_DOWN,
                     'sword': pygame.K_h,
                     'shield': pygame.K_j
                 }
@@ -165,6 +182,8 @@ class Game:
             self.continue_fall()
             self.stamina_update()
             self.continue_strike()
+            self.continue_downstrike()
+            self.continue_land_downstrike()
             self.continue_shield()
             self.continue_iframes()
             self.iterate_dash_timer()
@@ -340,7 +359,50 @@ class Game:
                 
                 if self.striking_counter <= 0:
                     self.striking = False
+
+        def deploy_downstrike(self):
+
+            if (self.is_acting() is False) & (self.stamina > 0):
+                if (self.jumping) or (self.falling):
+                    self.X_change = 0
+                    self.jumping = False
+                    self.sword_swoosh_sound.play()
+                    self.downstriking = True
+                    
+                    self.stamina -= 1
+                    self.stamina_reload_counter = self.stamina_reload_time*self.fps
+
+        def continue_downstrike(self):
+
+            if self.downstriking is True:
+
+                if self.falling is True:
+                    self.X_change = 0
+                    self.screen.blit(self.downstrike_sprite, (self.rect.x+self.downstrike_offsetx, self.rect.y-self.downstrike_offsety))
+                    self.downstrike_rect.x = self.rect.x+self.downstrike_offsetx
+                    self.downstrike_rect.y = self.rect.y-self.downstrike_offsety
+                
+                else:
+                    self.downstriking = False
+                    
+                    if self.on_top is True: 
+                        self.deploy_land_downstrike(self.land_downstrike_stun_time_short)
+                    else:
+                        self.deploy_land_downstrike(self.land_downstrike_stun_time_long)
+
+        def deploy_land_downstrike(self, timer):
+            self.land_downstrike_stun = True
+            self.land_downstrike_timer = timer
+            self.X_change = 0
         
+        def continue_land_downstrike(self):
+
+            if self.land_downstrike_stun is True:
+                if self.land_downstrike_timer > 0:
+                    self.land_downstrike_timer -= 1
+                else:
+                    self.land_downstrike_stun = False
+
         def deploy_shield(self):
             
             if (self.is_acting() is False) & (self.stamina > 0):
@@ -383,19 +445,21 @@ class Game:
                     self.i_frames_invinsible = False
                     self.i_frames = 60
         
-        def take_hit(self):
+        def take_hit(self, knockback = True):
             self.life -= 1
-            self.deploy_knockback()
+            if knockback is True:
+                self.deploy_knockback()
             self.deploy_iframes()
             
         def is_ready(self):
-            '''Returns True if player is ready for new inputs. (Can be expanded with other elements like self.is_jumping).'''
-            
-            return not self.knockback
+            '''Returns True if player is ready for new inputs.'''
+            if (self.knockback is False) & (self.land_downstrike_stun is False):
+                return True
+            return False
         
         def is_acting(self):
 
-            if (self.striking is True) or (self.shielding is True) or (self.dashing is True):
+            if (self.striking is True) or (self.downstriking is True) or (self.shielding is True) or (self.dashing is True):
                 return True
             return False
 
@@ -424,7 +488,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        # monitor_size = (1000,700)
+        monitor_size = (1000,700)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -671,8 +735,12 @@ class Game:
             if keys[player.input_dict['jump']]:
                 player.deploy_jump()
             
+            # downstrike
+            if keys[player.input_dict['down']]:
+                player.deploy_downstrike()
+
             # sword
-            if keys[player.input_dict['sword']]:
+            if (keys[player.input_dict['sword']]):
                 player.deploy_strike()
             
             # shield
@@ -691,6 +759,7 @@ class Game:
         
         self._handle_sword_collisions()
         self._handle_player_collisions()
+        self._handle_downstrike_collisions()
 
     def _handle_player_collisions(self):
         '''Handles player collisions.'''
@@ -773,9 +842,26 @@ class Game:
                     else:
                         self.do_hit(playerb)
     
-    def do_hit(self, player):
+    def _handle_downstrike_collisions(self):
+
+        self._calc_downstrike_collisions(self.player1, self.player2)
+        self._calc_downstrike_collisions(self.player2, self.player1)
+
+    def _calc_downstrike_collisions(self, playera, playerb):
+        
+        # if sword is deployed
+        if playera.downstriking is True:
+            
+            # check collisions
+            playerb_collide = bool(playera.downstrike_rect.colliderect(playerb.rect))
+
+            # hit player
+            if playerb_collide:
+                self.do_hit(playerb,knockback=False)
+
+    def do_hit(self, player, knockback=True):
         if player.invinsible is False: 
-            player.take_hit()
+            player.take_hit(knockback)
             self.sword_hit_sound.play()
     
     def do_shield_hit(self,player):
