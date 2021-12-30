@@ -792,6 +792,10 @@ class Game:
                 playera.Y_change = 0
             if playerb.Y_change < 0:
                 playerb.Y_change = 0
+        
+        if playera.on_top is True:
+            playera.rect.bottom = playerb.rect.top+1
+            self._edge_detection(playera.rect.bottom, playerb.rect.top)
     
     def _edge_detection(self,edgea,edgeb,margin=30):
 
