@@ -1,5 +1,5 @@
 # untitled_fighting_game
 
-1v1 fighting game I'm developing using PyGame in Python. Currently includes left/right movement, jumping, back-dashing, sword strike, shield, knockback, i-frames, stamina, health, and limited stats customization.
+1v1 fighting game I'm developing using PyGame in Python. Currently includes basic movement, dashing, sword striking downward air striking, shielding, knockback, i-frames, stamina, health, and stats customization. Can be played PvP or against a simple heuristic-baed AI.
 
 <img src="sprites/gameplay.gif" alt="drawing" width="600"/>
