@@ -15,15 +15,12 @@ class Game:
         self.menu = True
         self.main_menu = True
         self.screen_ratio = (16,9)
-
+        self.ai = ai
+        
         self._setup_screen()
         self._setup_elements()
         self._setup_audio()
         self._setup_fonts()
-
-        self.ai = ai
-        if self.ai is True:
-            self.ai_enemy = self.AIEnemy()
                     
     class Player(pygame.sprite.Sprite):
         
@@ -467,16 +464,126 @@ class Game:
 
     class AIEnemy():
         
-        def __init__(self):
+        def __init__(
+            self, 
+            input_dict,
+            playera,
+            playerb, 
+            ai_scheme = 'random_input'):
 
-            l,r,u,h,j = pygame.K_LEFT,pygame.K_RIGHT,pygame.K_UP,pygame.K_h,pygame.K_j
-            self.ai_key_dict = {l:0,r:0,u:0,h:0,j:0}
+            self.ai_scheme = ai_scheme
+            self.playera = playera
+            self.playerb = playerb
+
+            self.input_dict = input_dict
+            self.ai_key_dict = {
+                self.input_dict['jump']:0,
+                self.input_dict['left']:0,
+                self.input_dict['right']:0,
+                self.input_dict['down']:0,
+                self.input_dict['sword']:0,
+                self.input_dict['shield']:0}
+
+            if ai_scheme is not 'random_input':
+
+                self.walk_left = [self.input_dict['left']]*20
+                self.walk_right = [self.input_dict['right']]*15
+                self.sword = [self.input_dict['sword']]
+                self.shield = [self.input_dict['shield']]
+                self.jump_left = [self.input_dict['jump']] + self.walk_left
+                self.jump_right = [self.input_dict['jump']] + self.walk_right
+                self.jump_left_downstrike = self.jump_left + [self.input_dict['down']]
+                self.jump_right_downstrike = self.jump_right + [self.input_dict['down']]
+                
+                self.sequence_index = 0
+                self.sequence_list = [
+                    self.walk_left, 
+                    self.walk_right,
+                    self.sword, self.sword, self.sword,
+                    self.shield, self.shield, self.shield,
+                    self.jump_left_downstrike,
+                    self.jump_right_downstrike
+                    ]
+                self.sequence = self.walk_left
+
+        def get_input(self):
+
+            if self.ai_scheme == 'random_input':
+                return self._random_input()
+            elif self.ai_scheme == 'random_sequence':
+                return self._random_sequence()
+            elif self.ai_scheme == 'heuristic':
+                return self._heuristics()
+
+        def _random_input(self):
         
-        def ai_controls(self):
-        
-            ai_key_dict_copy = copy.copy(self.ai_key_dict)
+            ai_key_dict_copy = self.ai_key_dict.copy()
             ai_key_dict_copy[random.sample(self.ai_key_dict.keys(),1)[0]] = 1
+            
             return ai_key_dict_copy
+        
+        def _random_sequence(self):
+
+            if self.sequence_index == len(self.sequence)-1:
+                self.sequence = random.sample(self.sequence_list,1)[0]
+                self.sequence_index = 0
+            else:
+                self.sequence_index += 1
+
+            input = self.sequence[self.sequence_index]
+            
+            ai_key_dict_copy = self.ai_key_dict.copy()
+            ai_key_dict_copy[input] = 1
+            
+            return ai_key_dict_copy
+        
+        def _heuristics(self):
+            
+            if self.sequence_index == len(self.sequence)-1:
+                self.sequence = self._choose_heuristic()
+                self.sequence_index = 0
+            else:
+                self.sequence_index += 1
+
+            input = self.sequence[self.sequence_index]
+            
+            ai_key_dict_copy = self.ai_key_dict.copy()
+            ai_key_dict_copy[input] = 1
+            
+            return ai_key_dict_copy
+
+        def _choose_heuristic(self):
+
+            if self._is_left() & self._is_far() & self._has_stamina():
+                sequence = self.walk_left
+            elif self._is_right() & self._is_far() & self._has_stamina():
+                sequence = self.walk_right
+            elif self._is_left() & self._is_close() & self._has_stamina():
+                sequence = self.sword
+            elif self._is_right() & self._is_close() & self._has_stamina():
+                sequence = self.sword
+            else:
+                sequence = [None]
+            
+            return sequence
+        
+        def _is_left(self):
+            return self.playera.rect.centerx < self.playerb.rect.centerx
+
+        def _is_right(self):
+             return self.playera.rect.centerx > self.playerb.rect.centerx
+            
+        def _is_far(self, distance = 100):
+            return abs(self.playera.rect.centerx - self.playerb.rect.centerx) > self.playera.scale(distance)
+        
+        def _is_close(self, distance = 60):
+            return abs(self.playera.rect.centerx - self.playerb.rect.centerx) < self.playera.scale(distance)
+
+        def _is_medium(self, low_distance = 60, high_distance = 100):
+            return (not self._is_far(high_distance)) & (not self._is_close(low_distance))
+        
+        def _has_stamina(self):
+            return self.playerb.stamina > 0
 
     def scale(self, val):
         
@@ -529,6 +636,12 @@ class Game:
 
         self.player1 = self.Player(self.screen, self.scale, facing_left = False)
         self.player2 = self.Player(self.screen, self.scale, facing_left = True)
+
+        if self.ai is True:
+            self.ai_enemy = self.AIEnemy(
+                self.player2.input_dict,
+                self.player1, self.player2, 
+                ai_scheme = 'heuristic')
 
     def _setup_fonts(self):
         '''Creates fonts for various texts.'''
@@ -696,6 +809,7 @@ class Game:
                 self._setup_elements()
                 self.player1.max_stamina,self.player1.stamina,self.player1.life = max_stamina1,max_stamina1,10-max_stamina1
                 self.player2.max_stamina,self.player2.stamina,self.player2.life = max_stamina2,max_stamina2,10-max_stamina2
+            
             if keys[pygame.K_r]:
                 self.game_over = False
                 self.menu = True
@@ -707,7 +821,9 @@ class Game:
         self._player_movement(self.player1, keys)
         
         if self.ai is True:
-            keys = self.AIEnemy().ai_controls()
+            ai_input = self.ai_enemy.get_input()
+            if ai_input is not None:
+                keys = ai_input
         
         self._player_movement(self.player2, keys)
 
