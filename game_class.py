@@ -1,7 +1,6 @@
 import pygame
 import math
 import random
-import copy
 
 class Game:
         
@@ -16,7 +15,7 @@ class Game:
         self.main_menu = True
         self.screen_ratio = (16,9)
         self.ai = ai
-        
+
         self._setup_screen()
         self._setup_elements()
         self._setup_audio()
@@ -123,7 +122,7 @@ class Game:
             # stamina
             self.max_stamina = 5
             self.stamina = 5
-            self.stamina_reload_time = .5
+            self.stamina_reload_time = .4
             self.stamina_reload_counter = self.stamina_reload_time*self.fps
 
             # other attributes
@@ -469,7 +468,7 @@ class Game:
             input_dict,
             playera,
             playerb, 
-            ai_scheme = 'random_input'):
+            ai_scheme = 'heuristic'):
 
             self.ai_scheme = ai_scheme
             self.playera = playera
@@ -484,10 +483,10 @@ class Game:
                 self.input_dict['sword']:0,
                 self.input_dict['shield']:0}
 
-            if ai_scheme is not 'random_input':
+            if ai_scheme != 'random_input':
 
-                self.walk_left = [self.input_dict['left']]*20
-                self.walk_right = [self.input_dict['right']]*15
+                self.walk_left = [self.input_dict['left']]*10
+                self.walk_right = [self.input_dict['right']]*10
                 self.sword = [self.input_dict['sword']]
                 self.shield = [self.input_dict['shield']]
                 self.jump_left = [self.input_dict['jump']] + self.walk_left
@@ -554,14 +553,30 @@ class Game:
 
         def _choose_heuristic(self):
 
+            # far away
             if self._is_left() & self._is_far() & self._has_stamina():
                 sequence = self.walk_left
             elif self._is_right() & self._is_far() & self._has_stamina():
                 sequence = self.walk_right
+            # close
             elif self._is_left() & self._is_close() & self._has_stamina():
-                sequence = self.sword
+                possible_sequences = [self.walk_left,self.sword,self.shield]
+                sequence = random.sample(possible_sequences,1)[0]
             elif self._is_right() & self._is_close() & self._has_stamina():
-                sequence = self.sword
+                possible_sequences = [self.walk_right,self.sword,self.shield]
+                sequence = random.sample(possible_sequences,1)[0]
+            # medium distance
+            elif self._is_left() & self._is_medium() & self._has_stamina():
+                sequence = self.jump_left_downstrike
+            elif self._is_right() & self._is_medium() & self._has_stamina():
+                sequence = self.jump_right_downstrike
+            # no stamina
+            elif self._is_left() & (not self._has_stamina()):
+                possible_sequences = [self.walk_right,[None]*10]
+                sequence = random.sample(possible_sequences,1)[0]
+            elif self._is_right() & (not self._has_stamina()):
+                possible_sequences = [self.walk_left,[None]*10]
+                sequence = random.sample(possible_sequences,1)[0]
             else:
                 sequence = [None]
             
@@ -573,13 +588,13 @@ class Game:
         def _is_right(self):
              return self.playera.rect.centerx > self.playerb.rect.centerx
             
-        def _is_far(self, distance = 100):
+        def _is_far(self, distance = 160):
             return abs(self.playera.rect.centerx - self.playerb.rect.centerx) > self.playera.scale(distance)
         
-        def _is_close(self, distance = 60):
+        def _is_close(self, distance = 140):
             return abs(self.playera.rect.centerx - self.playerb.rect.centerx) < self.playera.scale(distance)
 
-        def _is_medium(self, low_distance = 60, high_distance = 100):
+        def _is_medium(self, low_distance = 140, high_distance = 160):
             return (not self._is_far(high_distance)) & (not self._is_close(low_distance))
         
         def _has_stamina(self):
@@ -597,7 +612,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        monitor_size = (1000,700)
+        # monitor_size = (1000,700)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -771,12 +786,14 @@ class Game:
 
             self._show_game_over('Player 2 wins')
             self.player1.rect.y = -2000
+            self.player1.knockback = True
             self.game_over = True
 
         if self.player2.life <= 0:
 
             self._show_game_over('Player 1 wins')
             self.player2.rect.y = -2000
+            self.player2.knockback = True
             self.game_over = True 
     
     def _show_game_over(self, text):
@@ -992,3 +1009,33 @@ class Game:
             player.stamina = 0
             self.sword_hit_shield_sound.play()
             player.deploy_knockback()
+
+if __name__ == "__main__":
+    
+    game = Game(ai = True)
+
+    while game.running is True:
+
+        if game.menu is True:
+            game.handle_menu()
+
+        else:
+            game.show_background()
+            
+            game.handle_gameover()
+            game.handle_input()
+
+            game.player1.update()
+            game.player2.update()
+
+            game.handle_collisions()
+
+            game.player1.movement()
+            game.player2.movement()
+
+            game.player1.show()
+            game.player2.show()
+            game.show_data()
+        
+        game.handle_events()  
+        game.update_display()
