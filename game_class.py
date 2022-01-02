@@ -640,8 +640,8 @@ class Game:
                 if self._is_close() & self._has_stamina() & self.playera.striking:
                     self._do_sequence_break(self.shield)
             
-            if self.avoiding is True:
-                self._do_sequence_break(self._avoid())
+                if self.avoiding is True:
+                    self._do_sequence_break(self._avoid())
         
         def _do_sequence_break(self, sequence):
 
@@ -651,25 +651,27 @@ class Game:
 
         def _avoid(self):
             
+            self.sequence_index = 0
             self.sequence_break = True
             self.avoiding = True
             if self.playerb.stamina >=2:
                 self.avoiding = False
 
             if self._is_left():
-                if (self.playerb.rect.x == self.playerb.screen.get_width()) & (self._is_close() or self._is_medium()):
-                    sequence = self.jump_left + self.walk_left*10
+                if self._near_right_edge():
+                    sequence = self.jump_left + self.walk_left*3
+                    print('avoid ')
                     return sequence
                 else:
                     return self.walk_right
             if self._is_right():
-                if (self.playerb.rect.x == 0) & (self._is_close() or self._is_medium()):
-                    sequence = self.jump_right + self.walk_right*10
+                if self._near_left_edge():
+                    sequence = self.jump_right + self.walk_right*3
                     return sequence
                 else:
                     return self.walk_left
             return [None]
-
+           
         def _is_left(self):
             return self.playera.rect.centerx < self.playerb.rect.centerx
 
@@ -678,6 +680,9 @@ class Game:
             
         def _is_far(self, distance = 160):
             return abs(self.playera.rect.centerx - self.playerb.rect.centerx) > self.playera.scale(distance)
+        
+        def _is_medium(self, low_distance = 120, high_distance = 160):
+            return (not self._is_far(high_distance)) & (not self._is_close(low_distance))
         
         def _is_close(self, distance = 120):
             return abs(self.playera.rect.centerx - self.playerb.rect.centerx) < self.playera.scale(distance)
@@ -688,8 +693,11 @@ class Game:
         def _is_under(self):
             return (self.playerb.rect.centery > self.playera.rect.centery) & self._is_close()
 
-        def _is_medium(self, low_distance = 120, high_distance = 160):
-            return (not self._is_far(high_distance)) & (not self._is_close(low_distance))
+        def _near_right_edge(self):
+            return abs(self.playerb.rect.x - self.playerb.screen.get_width()) < self.playera.scale(100)
+        
+        def _near_left_edge(self):
+            return abs(self.playerb.rect.x - 0) < self.playera.scale(100)
         
         def _has_stamina(self, min = 1):
             return self.playerb.stamina >= min
