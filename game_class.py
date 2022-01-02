@@ -105,8 +105,8 @@ class Game:
             self.downstrike_offsety = self.scale(-30)
             self.downstrike_rect.x = self.rect.x+self.downstrike_offsetx
             self.downstrike_rect.y = self.rect.y-self.downstrike_offsety
-            self.land_downstrike_stun_time_long = 60
-            self.land_downstrike_stun_time_short = 10
+            self.land_downstrike_stun_time_long = 30
+            self.land_downstrike_stun_time_short = 5
             self.land_downstrike_stun = False
 
             # shield
