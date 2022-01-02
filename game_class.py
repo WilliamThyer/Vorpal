@@ -495,6 +495,7 @@ class Game:
                 self.jump_right = [self.input_dict['jump']] + self.walk_right
                 self.jump_left_downstrike = self.jump_left + [self.input_dict['down']]
                 self.jump_right_downstrike = self.jump_right + [self.input_dict['down']]
+                self.down_strike = [self.input_dict['jump']] + [self.input_dict['down']]
                 
                 self.sequence_index = 0
                 self.sequence_list = [
@@ -505,10 +506,12 @@ class Game:
                     self.sword, self.sword, self.sword,
                     self.shield, self.shield, self.shield,
                     self.jump_left_downstrike,
-                    self.jump_right_downstrike
+                    self.jump_right_downstrike,
+                    self.down_strike
                     ]
                 self.sequence = self.walk_left
                 self.sequence_break = False
+                self.avoiding = False
 
         def get_input(self):
 
@@ -545,11 +548,11 @@ class Game:
             
             self._check_sequence_break()
 
-            if self.sequence_index == len(self.sequence)-1:
+            if self.sequence_index >= len(self.sequence)-1:
                 self.sequence = self._choose_heuristic()
-                self.sequence_index = 0
                 if self.sequence_break is True:
                     self.sequence_break = False
+                self.sequence_index = 0
             else:
                 self.sequence_index += 1
 
@@ -562,40 +565,55 @@ class Game:
 
         def _choose_heuristic(self):
 
-            sequence = None
+            sequence = [None]
             # far away
-            if self._is_left() & self._is_far() & self._has_stamina():
+            if self._is_left() & self._is_far():
                 sequence = self.walk_left
-            elif self._is_right() & self._is_far() & self._has_stamina():
+            if self._is_right() & self._is_far():
                 sequence = self.walk_right
             # close
-            elif self._is_left() & self._is_close() & self._has_stamina():
-                possible_sequences = [self.walk_left,self.sword,self.shield]
-                sequence = random.sample(possible_sequences,1)[0]
-            elif self._is_right() & self._is_close() & self._has_stamina():
-                possible_sequences = [self.walk_right,self.sword,self.shield]
-                sequence = random.sample(possible_sequences,1)[0]
+            if self._is_close():
+                if self.playera.striking:
+                    sequence = self.shield
+                elif self._is_left():
+                    possible_sequences = [self.walk_left,self.sword]
+                    sequence = random.sample(possible_sequences,1)[0]
+                elif self._is_right():
+                    possible_sequences = [self.walk_right,self.sword]
+                    sequence = random.sample(possible_sequences,1)[0]
             # medium distance
-            elif self._is_left() & self._is_medium() & self._has_stamina():
-                possible_sequences = [self.jump_left_downstrike,self.dash_left]
-                sequence = random.sample(possible_sequences,1)[0]
-            elif self._is_right() & self._is_medium() & self._has_stamina():
-                possible_sequences = [self.jump_right_downstrike,self.dash_right]
-                sequence = random.sample(possible_sequences,1)[0]
+            if self._is_left() & self._is_medium():
+                if self._has_stamina(2):
+                    possible_sequences = [self.jump_left_downstrike,self.dash_left]
+                    sequence = random.sample(possible_sequences,1)[0]
+                else:
+                    sequence = self.jump_left_downstrike
+            if self._is_right() & self._is_medium():
+                if self._has_stamina(2):
+                    possible_sequences = [self.jump_right_downstrike,self.dash_right]
+                    sequence = random.sample(possible_sequences,1)[0]
+                else:
+                    sequence = self.jump_left_downstrike
             # enemy in stun
-            elif self._is_left() & (self.playera.land_downstrike_stun is True):
-                sequence = self.dash_left
-            elif self._is_right() & (self.playera.land_downstrike_stun is True):
-                sequence = self.dash_right
+            if self._is_left() & (self.playera.land_downstrike_stun is True):
+                if self._is_far() & self._has_stamina(2):
+                    sequence = self.dash_left
+                if (self._is_medium() or self._is_close()) & self._has_stamina(1):
+                    sequence = self.walk_left + self.sword
+            if self._is_right() & (self.playera.land_downstrike_stun is True):
+                if self._is_far() & self._has_stamina(2):
+                    sequence = self.dash_right
+                if (self._is_medium() or self._is_close()) & self._has_stamina(1):
+                    sequence = self.walk_right + self.sword
+            # is over or under
+            if self._is_on_top():
+                sequence = self.down_strike
+            if self._is_under():
+                possible_sequences = [self.dash_left,self.dash_right]
+                sequence = random.sample(possible_sequences,1)[0]
             # no stamina
-            elif self._is_left() & (not self._has_stamina()):
-                possible_sequences = [self.walk_right,[None]*10]
-                sequence = random.sample(possible_sequences,1)[0]
-            elif self._is_right() & (not self._has_stamina()):
-                possible_sequences = [self.walk_left,[None]*10]
-                sequence = random.sample(possible_sequences,1)[0]
-            elif sequence is None:
-                sequence = [None]
+            if not self._has_stamina():
+                sequence = self._avoid()
             
             return sequence
         
@@ -606,19 +624,51 @@ class Game:
                 if self._is_left() & (self.playera.land_downstrike_stun is True):
                     if self._is_far() & self._has_stamina(2):
                         self._do_sequence_break(self.dash_left)
-                    if self._is_medium() & self._has_stamina(1):
+                    if (self._is_medium() or self._is_close()) & self._has_stamina(1):
                         self._do_sequence_break(self.walk_left + self.sword)
                 if self._is_right() & (self.playera.land_downstrike_stun is True):
                     if self._is_far() & self._has_stamina(2):
                         self._do_sequence_break(self.dash_right)
-                    if self._is_medium() & self._has_stamina(1):
+                    if (self._is_medium() or self._is_close()) & self._has_stamina(1):
                         self._do_sequence_break(self.walk_right + self.sword)
+                if self._is_on_top():
+                    self._do_sequence_break(self.down_strike)
+                if self._is_under():
+                    possible_sequences = [self.dash_left,self.dash_right]
+                    sequence = random.sample(possible_sequences,1)[0]
+                    self._do_sequence_break(sequence)
+                if self._is_close() & self._has_stamina() & self.playera.striking:
+                    self._do_sequence_break(self.shield)
+            
+            if self.avoiding is True:
+                self._do_sequence_break(self._avoid())
         
         def _do_sequence_break(self, sequence):
-            
+
             self.sequence_index = 0
             self.sequence_break = True
             self.sequence = sequence
+
+        def _avoid(self):
+            
+            self.sequence_break = True
+            self.avoiding = True
+            if self.playerb.stamina >=2:
+                self.avoiding = False
+
+            if self._is_left():
+                if (self.playerb.rect.x == self.playerb.screen.get_width()) & (self._is_close() or self._is_medium()):
+                    sequence = self.jump_left + self.walk_left*10
+                    return sequence
+                else:
+                    return self.walk_right
+            if self._is_right():
+                if (self.playerb.rect.x == 0) & (self._is_close() or self._is_medium()):
+                    sequence = self.jump_right + self.walk_right*10
+                    return sequence
+                else:
+                    return self.walk_left
+            return [None]
 
         def _is_left(self):
             return self.playera.rect.centerx < self.playerb.rect.centerx
@@ -631,6 +681,12 @@ class Game:
         
         def _is_close(self, distance = 120):
             return abs(self.playera.rect.centerx - self.playerb.rect.centerx) < self.playera.scale(distance)
+
+        def _is_on_top(self):
+            return (self.playerb.rect.centery < self.playera.rect.centery) & self._is_close()
+        
+        def _is_under(self):
+            return (self.playerb.rect.centery > self.playera.rect.centery) & self._is_close()
 
         def _is_medium(self, low_distance = 120, high_distance = 160):
             return (not self._is_far(high_distance)) & (not self._is_close(low_distance))
@@ -650,7 +706,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        # monitor_size = (1000,700)
+        monitor_size = (1000,700)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -1050,7 +1106,7 @@ class Game:
 
 if __name__ == "__main__":
     
-    game = Game(ai = False)
+    game = Game(ai = True)
 
     while game.running is True:
 
