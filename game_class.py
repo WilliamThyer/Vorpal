@@ -4,7 +4,7 @@ import random
 
 class Game:
         
-    def __init__(self, ai = False):
+    def __init__(self):
 
         pygame.init()
         self.running = True
@@ -14,12 +14,13 @@ class Game:
         self.menu = True
         self.main_menu = True
         self.screen_ratio = (16,9)
-        self.ai = ai
+        self.ai = False
 
         self._setup_screen()
         self._setup_elements()
         self._setup_audio()
         self._setup_fonts()
+        self._setup_menu()
                     
     class Player(pygame.sprite.Sprite):
         
@@ -485,8 +486,8 @@ class Game:
 
             if ai_scheme != 'random_input':
 
-                self.walk_left = [self.input_dict['left']]*5
-                self.walk_right = [self.input_dict['right']]*5
+                self.walk_left = [self.input_dict['left']]*10
+                self.walk_right = [self.input_dict['right']]*10
                 self.sword = [self.input_dict['sword']]
                 self.shield = [self.input_dict['shield']]
                 self.dash_left = [self.input_dict['left']]*3 + [None]*3 + [self.input_dict['left']]*5 + self.sword
@@ -569,8 +570,11 @@ class Game:
         def _choose_heuristic(self):
 
             sequence = [None]
+            # no stamina
+            if not self._has_stamina():
+                sequence = self._avoid()
             # is over or under
-            if self._is_on_top():
+            elif self._is_on_top():
                 possible_sequences = [self.down_strike,self.walk_right,self.walk_left]
                 sequence = random.sample(possible_sequences,1)[0]
             elif self._is_under():
@@ -628,9 +632,6 @@ class Game:
                     sequence = random.sample(possible_sequences,1)[0]
                 if (self._is_medium() or self._is_close()) & self._has_stamina(1):
                     sequence = self.walk_right + self.sword
-            # no stamina
-            if not self._has_stamina():
-                sequence = self._avoid()
             
             return sequence
         
@@ -713,7 +714,7 @@ class Game:
         '''Creates pygame screen and draws background.'''
 
         monitor_size = (pygame.display.Info().current_w,pygame.display.Info().current_h)
-        monitor_size = (1000,700)
+        # monitor_size = (1000,700)
         
         horiz = monitor_size[0]/self.screen_ratio[0]
         vert = monitor_size[1]/self.screen_ratio[1]
@@ -731,6 +732,11 @@ class Game:
         self.red_heart_sprite = pygame.transform.scale(self.red_heart_sprite, self.scale((30,30)))        
         self.stamina_sprite = pygame.image.load('sprites/stamina.png').convert_alpha()
         self.stamina_sprite = pygame.transform.scale(self.stamina_sprite, self.scale((60,60)))
+
+    def _setup_menu(self):
+
+        self.menu_dict = {'main': True, 'start_fight': False}
+        self.pointer = 0
 
     def _setup_audio(self):
 
@@ -752,7 +758,9 @@ class Game:
 
         self.player1 = self.Player(self.screen, self.scale, facing_left = False)
         self.player2 = self.Player(self.screen, self.scale, facing_left = True)
+        self._setup_ai()
 
+    def _setup_ai(self):
         if self.ai is True:
             self.ai_enemy = self.AIEnemy(
                 self.player2.input_dict,
@@ -767,62 +775,101 @@ class Game:
 
     def handle_menu(self):
 
-        if (self.main_menu is True) & (self.running is True):
+        if (self.main_menu is True):
+            
+            if self.menu_dict['main'] == True:
+                self._show_main_menu()
+            if self.menu_dict['start_fight'] == True:
+                self._show_start_fight_menu()
 
-            self.show_background()
-            self.player1.show()
-            self.player2.show()
-            self._show_menu()
+    def _show_main_menu(self):
+
+        keys = (pygame.event.get(pygame.KEYDOWN))
+        if len(keys) > 0:
+            if (keys[0].key == self.player1.input_dict['down']) or (keys[0].key == self.player2.input_dict['down']):
+                if self.pointer == 0:
+                    self.pointer += 1
+            if (keys[0].key == self.player1.input_dict['jump']) or (keys[0].key == self.player2.input_dict['jump']):
+                if self.pointer == 1:
+                    self.pointer -= 1
+            if (keys[0].key == pygame.K_SPACE) or (keys[0].key == self.player1.input_dict['sword']) or (keys[0].key == self.player2.input_dict['sword']):
+                if self.pointer == 0:
+                    self.ai = True
+                    self._setup_ai()
+                else:
+                    self.ai = False
+
+                self.menu_dict['main'] = False
+                self.menu_dict['start_fight'] = True
+            if keys[0].key == pygame.K_ESCAPE:
+                    self.running = False
+
+        texts = ['1 Player', '2 Player']
+        self._show_text(texts, pointer = self.pointer)
+
+    def _show_start_fight_menu(self):
+
+            texts = ['Press SPACE to start fight',"Use LEFT/RIGHT to adjust your fighter's stats"]
+            self._show_text(texts, 150)
             
             keys = (pygame.event.get(pygame.KEYDOWN))
             if len(keys) > 0:
                 if keys[0].key == self.player1.input_dict['right']:
-                    if self.player1.life < 9:
+                    if self.player1.life < 7:
                         self.player1.life += 1
                         self.player1.stamina -= 1
                         self.player1.max_stamina -=1
 
                 if keys[0].key == self.player1.input_dict['left']:
-                    if self.player1.stamina < 9:
+                    if self.player1.stamina < 7:
                         self.player1.life -= 1
                         self.player1.stamina += 1
                         self.player1.max_stamina +=1
 
                 if keys[0].key == self.player2.input_dict['left']:
-                    if self.player2.life < 9:
+                    if self.player2.life < 7:
                         self.player2.life += 1
                         self.player2.stamina -= 1
                         self.player2.max_stamina -=1
 
                 if keys[0].key == self.player2.input_dict['right']:
-                    if self.player2.stamina < 9:
+                    if self.player2.stamina < 7:
                         self.player2.life -= 1
                         self.player2.stamina += 1
                         self.player2.max_stamina += 1
                 
+                if keys[0].key == pygame.K_BACKSPACE:
+                    self.menu_dict['main'] = True
+                    self.menu_dict['start_fight'] = False
+                
                 if keys[0].key == pygame.K_SPACE:
                     self.menu = False
+                
+                if keys[0].key == pygame.K_ESCAPE:
+                    self.running = False
             
             self.player1.rect.bottom = self.player1.ground
             self.player2.rect.bottom = self.player2.ground
 
-    def _show_menu(self):
+    def _show_text(self, text, text_y = 150, pointer = None):
 
-        self._show_lives()
-        self._show_stamina()
+        if not isinstance(text, list):
+            text = [text]
 
-        space_text = self.over_font.render('Press SPACE to start', True, (255,255,255))
-        stats_text = self.over_font.render("Use keys to adjust your fighter's stats", True, (255,255,255))
+        center_width = self.screen_size[0]/2
+        text_y = self.scale(text_y)
 
-        half_width,half_height = self.screen_size[0]/2,self.screen_size[1]/2
-
-        space_text_rect = space_text.get_rect(center=(half_width,half_height*.5))
-        self.screen.blit(space_text, space_text_rect)
-
-        stats_text_rect = stats_text.get_rect(
-            midtop=(half_width,space_text_rect.bottom+half_height*.03))
-        self.screen.blit(stats_text, stats_text_rect)
-
+        for i,t in enumerate(text):
+            render_text = self.score_font.render(t, True, (255,255,255))
+            render_text_rect = render_text.get_rect(midtop=(center_width,text_y))
+            self.screen.blit(render_text, render_text_rect)
+            if (pointer is not None) & (i == pointer):
+                
+                self.player1.sword_rect.midright = (render_text_rect.left-self.scale(2),render_text_rect.centery-self.scale(4))
+                self.screen.blit(self.player1.sword_sprite,self.player1.sword_rect)
+            
+            text_y = render_text_rect.bottom + self.scale(1)
+            
     def show_data(self):
 
         self._show_lives()
@@ -882,37 +929,30 @@ class Game:
         self._handle_reset()
 
     def _check_game_over(self):
-        
-        if self.player1.life <= 0:
 
-            self._show_game_over('Player 2 wins')
+        texts = ['Press SPACE to restart', 'Press R to reset stats']
+        
+        if (self.player1.life <= 0) & (self.player2.life >= 1):
+            texts = ['Player 2 wins'] + texts
+            self._show_text(texts)
             self.player1.rect.y = -2000
             self.player1.knockback = True
             self.game_over = True
 
-        if self.player2.life <= 0:
+        elif (self.player2.life <= 0) & (self.player1.life >= 1):
 
-            self._show_game_over('Player 1 wins')
+            texts = ['Player 1 wins'] + texts
+            self._show_text(texts)
             self.player2.rect.y = -2000
             self.player2.knockback = True
             self.game_over = True 
-    
-    def _show_game_over(self, text):
-
-        over_text = self.over_font.render(text, True, (255,255,255))
-        restart_text = self.over_font.render('Press SPACE to restart', True, (255,255,255))
-        reset_text = self.over_font.render('Press R to reset stats', True, (255,255,255))
-
-        half_width,half_height = self.screen.get_width()/2,self.screen.get_height()/2
-
-        over_text_rect = over_text.get_rect(center=(half_width,half_height*.5))
-        self.screen.blit(over_text, over_text_rect)
-
-        restart_text_rect = restart_text.get_rect(midtop=(half_width,over_text_rect.bottom+half_height*.03))
-        self.screen.blit(restart_text, restart_text_rect)
-
-        reset_text_rect = reset_text.get_rect(midtop=(half_width,restart_text_rect.bottom+half_height*.03))
-        self.screen.blit(reset_text, reset_text_rect)
+        
+        elif (self.player2.life <= 0) & (self.player1.life <= 0):
+            texts = ['Draw'] + texts
+            self._show_text(texts)
+            self.player1.rect.y, self.player2.rect.y = -2000,-2000
+            self.player1.knockback, self.player2.knockback = True, True
+            self.game_over = True  
     
     def _handle_reset(self):
 
@@ -1113,15 +1153,16 @@ class Game:
 
 if __name__ == "__main__":
     
-    game = Game(ai = True)
+    game = Game()
 
     while game.running is True:
+
+        game.show_background()
 
         if game.menu is True:
             game.handle_menu()
 
         else:
-            game.show_background()
             
             game.handle_gameover()
             game.handle_input()
@@ -1134,9 +1175,9 @@ if __name__ == "__main__":
             game.player1.movement()
             game.player2.movement()
 
-            game.player1.show()
-            game.player2.show()
-            game.show_data()
+        game.player1.show()
+        game.player2.show()
         
+        game.show_data()
         game.handle_events()  
         game.update_display()
