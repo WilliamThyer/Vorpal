@@ -804,39 +804,16 @@ class Game:
             if keys[0].key == pygame.K_ESCAPE:
                     self.running = False
 
+        self._show_text('VORPΛL', font = self.over_font)
         texts = ['1 Player', '2 Player']
-        self._show_text(texts, pointer = self.pointer)
+        self._show_text(texts, text_y= 225, pointer = self.pointer)
 
     def _show_start_fight_menu(self):
 
-            texts = ['Press SPACE to start fight',"Use LEFT/RIGHT to adjust your fighter's stats"]
-            self._show_text(texts, 150)
+            self._show_text('Press SPACE to start fight', 150)
             
             keys = (pygame.event.get(pygame.KEYDOWN))
             if len(keys) > 0:
-                if keys[0].key == self.player1.input_dict['right']:
-                    if self.player1.life < 7:
-                        self.player1.life += 1
-                        self.player1.stamina -= 1
-                        self.player1.max_stamina -=1
-
-                if keys[0].key == self.player1.input_dict['left']:
-                    if self.player1.stamina < 7:
-                        self.player1.life -= 1
-                        self.player1.stamina += 1
-                        self.player1.max_stamina +=1
-
-                if keys[0].key == self.player2.input_dict['left']:
-                    if self.player2.life < 7:
-                        self.player2.life += 1
-                        self.player2.stamina -= 1
-                        self.player2.max_stamina -=1
-
-                if keys[0].key == self.player2.input_dict['right']:
-                    if self.player2.stamina < 7:
-                        self.player2.life -= 1
-                        self.player2.stamina += 1
-                        self.player2.max_stamina += 1
                 
                 if keys[0].key == pygame.K_BACKSPACE:
                     self.menu_dict['main'] = True
@@ -847,20 +824,19 @@ class Game:
                 
                 if keys[0].key == pygame.K_ESCAPE:
                     self.running = False
-            
-            self.player1.rect.bottom = self.player1.ground
-            self.player2.rect.bottom = self.player2.ground
 
-    def _show_text(self, text, text_y = 150, pointer = None):
+    def _show_text(self, text, text_y = 150, pointer = None, font = None):
 
         if not isinstance(text, list):
             text = [text]
+        if font is None:
+            font = self.score_font
 
         center_width = self.screen_size[0]/2
         text_y = self.scale(text_y)
 
         for i,t in enumerate(text):
-            render_text = self.score_font.render(t, True, (255,255,255))
+            render_text = font.render(t, True, (255,255,255))
             render_text_rect = render_text.get_rect(midtop=(center_width,text_y))
             self.screen.blit(render_text, render_text_rect)
             if (pointer is not None) & (i == pointer):
@@ -930,26 +906,27 @@ class Game:
 
     def _check_game_over(self):
 
-        texts = ['Press SPACE to restart', 'Press R to reset stats']
+        texts = ['Press SPACE to restart', 'Press BACK to return to main menu']
         
         if (self.player1.life <= 0) & (self.player2.life >= 1):
-            texts = ['Player 2 wins'] + texts
-            self._show_text(texts)
+
+            self._show_text('Player 2 wins', font = self.over_font)
+            self._show_text(texts, 225)
             self.player1.rect.y = -2000
             self.player1.knockback = True
             self.game_over = True
 
         elif (self.player2.life <= 0) & (self.player1.life >= 1):
 
-            texts = ['Player 1 wins'] + texts
-            self._show_text(texts)
+            self._show_text('Player 1 wins', font = self.over_font)
+            self._show_text(texts, 225)
             self.player2.rect.y = -2000
             self.player2.knockback = True
             self.game_over = True 
         
         elif (self.player2.life <= 0) & (self.player1.life <= 0):
-            texts = ['Draw'] + texts
-            self._show_text(texts)
+            self._show_text('Draw', font = self.over_font)
+            self._show_text(texts, 225)
             self.player1.rect.y, self.player2.rect.y = -2000,-2000
             self.player1.knockback, self.player2.knockback = True, True
             self.game_over = True  
@@ -968,9 +945,11 @@ class Game:
                 self.player1.max_stamina,self.player1.stamina,self.player1.life = max_stamina1,max_stamina1,10-max_stamina1
                 self.player2.max_stamina,self.player2.stamina,self.player2.life = max_stamina2,max_stamina2,10-max_stamina2
             
-            if keys[pygame.K_r]:
+            if keys[pygame.K_BACKSPACE]:
                 self.game_over = False
                 self.menu = True
+                self.menu_dict['main'] = True
+                self.menu_dict['start_fight'] = False
                 self._setup_elements()
 
     def handle_input(self):
